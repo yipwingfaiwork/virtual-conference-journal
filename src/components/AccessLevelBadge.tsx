@@ -5,9 +5,10 @@ import { User } from "@/lib/types";
 interface AccessLevelBadgeProps {
   accessLevel: User['accessLevel'];
   showLabel?: boolean;
+  className?: string; // Add className prop support
 }
 
-const AccessLevelBadge = ({ accessLevel, showLabel = true }: AccessLevelBadgeProps) => {
+const AccessLevelBadge = ({ accessLevel, showLabel = true, className }: AccessLevelBadgeProps) => {
   let badgeColor = '';
   let badgeVariant: 'default' | 'secondary' | 'outline' = 'default';
   let label = '';
@@ -31,7 +32,7 @@ const AccessLevelBadge = ({ accessLevel, showLabel = true }: AccessLevelBadgePro
   }
 
   return (
-    <Badge variant={badgeVariant} className={badgeColor}>
+    <Badge variant={badgeVariant} className={`${badgeColor} ${className || ''}`}>
       {showLabel ? label : `${accessLevel}`}
     </Badge>
   );
