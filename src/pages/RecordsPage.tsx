@@ -48,7 +48,7 @@ const RecordsPage = () => {
   const [records, setRecords] = useState<ConferenceRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<ConferenceRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   
   // Parse search query from URL
@@ -85,7 +85,7 @@ const RecordsPage = () => {
       );
     }
     
-    if (departmentFilter) {
+    if (departmentFilter && departmentFilter !== 'all') {
       results = results.filter(record => 
         record.department === departmentFilter
       );
@@ -100,7 +100,7 @@ const RecordsPage = () => {
   
   const clearFilters = () => {
     setSearchTerm('');
-    setDepartmentFilter('');
+    setDepartmentFilter('all');
   };
   
   const getCreatorName = (userId: string) => {
@@ -170,7 +170,7 @@ const RecordsPage = () => {
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     <SelectItem value="Operations">Operations</SelectItem>
                     <SelectItem value="Finance">Finance</SelectItem>
                     <SelectItem value="Management">Management</SelectItem>
