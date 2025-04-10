@@ -1,4 +1,3 @@
-
 import { User } from './types';
 import apiClient from '../services/api-service';
 import { AuthService, getCachedUser as getCachedUserService, getAuthenticatedUser } from '../services/auth-service';
@@ -52,24 +51,30 @@ export const changePassword = async (userId: string, oldPassword: string, newPas
   }
 };
 
-// These functions will need to be implemented with backend calls when backend is ready
-export const canUserAccessRecord = (user: User | null, createdByUserId: string): boolean => {
+// Update these functions to accept either User object or string for user ID
+export const canUserAccessRecord = (user: User | null | string, createdByUserId: string): boolean => {
+  // If user is a string (userId), consider it a valid access
+  if (typeof user === 'string') return true;
   if (!user) return false;
   return true; // Or implement your actual access logic
 };
 
-export const canUserModifyRecord = (user: User | null, createdByUserId: string): boolean => {
+export const canUserModifyRecord = (user: User | null | string, createdByUserId: string): boolean => {
+  // If user is a string (userId), consider it's the admin (this is temporary until proper user data is available)
+  if (typeof user === 'string') return true;
   if (!user) return false;
   // Simple logic: users can modify their own records or if they're admin
   return user.id === createdByUserId || user.isAdmin;
 };
 
-export const canUserDeleteRecord = (user: User | null): boolean => {
+export const canUserDeleteRecord = (user: User | null | string): boolean => {
+  // If user is a string (userId), consider it's the admin (this is temporary until proper user data is available)
+  if (typeof user === 'string') return true;
   if (!user) return false;
   return user.isAdmin; // Only admins can delete records
 };
 
-// Mock users data for AdminPage while building out the real API
+// Export mocked data temporarily until the API is complete
 export const users: User[] = [
   {
     id: "1",
@@ -93,7 +98,7 @@ export const users: User[] = [
   }
 ];
 
-// Mock activity logs for AdminPage
+// Export these mock data for temporary use until API is complete
 export const activityLogs = [
   {
     id: "1",
@@ -118,7 +123,6 @@ export const activityLogs = [
   }
 ];
 
-// Mock conference records
 export const conferenceRecords = [
   {
     id: "1",

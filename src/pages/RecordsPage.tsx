@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PlusCircle, Search, Filter, Calendar, Clock, User, Video, FileText, RefreshCw } from 'lucide-react';
@@ -88,7 +87,12 @@ const RecordsPage = () => {
         uniqueCreatorIds.map(async (creatorId) => {
           try {
             const response = await apiClient.get(`/users/${creatorId}`);
-            names[creatorId] = response.data.name;
+            // Check if response.data exists and has a name property
+            if (response.data && typeof response.data === 'object' && 'name' in response.data) {
+              names[creatorId] = response.data.name;
+            } else {
+              names[creatorId] = 'Unknown';
+            }
           } catch (error) {
             console.error(`Error fetching user ${creatorId}:`, error);
             names[creatorId] = 'Unknown';
@@ -132,7 +136,7 @@ const RecordsPage = () => {
     setDepartmentFilter('all');
   };
   
-  const getCreatorName = (userId: string) => {
+  const getCreatorName = (userId: string): string => {
     return creatorNames[userId] || 'Unknown';
   };
 

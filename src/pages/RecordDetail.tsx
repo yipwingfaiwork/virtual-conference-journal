@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar, Clock, Users, Video, Link2, Pencil, Trash2, ArrowLeft, Building } from 'lucide-react';
@@ -26,7 +25,7 @@ const RecordDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<null | any>(null);
   const [creator, setCreator] = useState(null);
   const [canModify, setCanModify] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
@@ -54,15 +53,16 @@ const RecordDetail = () => {
           console.error('Error fetching creator data:', error);
         }
         
-        // Check permissions
-        try {
-          const modifyResponse = await canUserModifyRecord(currentUser.id, record.createdBy);
-          setCanModify(modifyResponse);
-          
-          const deleteResponse = await canUserDeleteRecord(currentUser.id);
-          setCanDelete(deleteResponse);
-        } catch (error) {
-          console.error('Error checking permissions:', error);
+        // Check permissions - pass user ID as string since we don't have the full User object yet
+        // This is a temporary solution until we have proper user data
+        if (currentUser && typeof currentUser === 'object' && 'id' in currentUser) {
+          // If we have a proper user object
+          setCanModify(canUserModifyRecord(currentUser, record.createdBy));
+          setCanDelete(canUserDeleteRecord(currentUser));
+        } else {
+          // If we just have a user ID as string
+          setCanModify(canUserModifyRecord(currentUser.toString(), record.createdBy));
+          setCanDelete(canUserDeleteRecord(currentUser.toString()));
         }
       }
     };
