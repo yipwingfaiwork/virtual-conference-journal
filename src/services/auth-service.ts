@@ -2,6 +2,9 @@
 import apiClient from './api-service';
 import { User } from '../lib/types';
 
+// Store the current user in memory during the session
+let currentUser: User | null = null;
+
 const setAuthToken = (token: string | null) => {
   if (token) {
     localStorage.setItem('authToken', token);
@@ -19,19 +22,29 @@ if (token) {
 }
 
 export const AuthService = {
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string): Promise<User> => {
     const response = await apiClient.post('/auth/login', { email, password });
     const { token, user } = response.data;
     setAuthToken(token);
+    currentUser = user;
     return user;
   },
   
-  logout: async () => {
-    await apiClient.post('/auth/logout');
-    setAuthToken(null);
+  logout: async (): Promise<void> => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setAuthToken(null);
+      currentUser = null;
+    }
   },
   
   getCurrentUser: async (): Promise<User | null> => {
+    // Return cached user if available
+    if (currentUser) return currentUser;
+    
     // Skip request if no token exists
     if (!localStorage.getItem('authToken')) {
       return null;
@@ -39,9 +52,11 @@ export const AuthService = {
     
     try {
       const response = await apiClient.get('/auth/me');
-      return response.data;
+      currentUser = response.data;
+      return currentUser;
     } catch (error) {
       setAuthToken(null); // Clear invalid token
+      currentUser = null;
       return null;
     }
   },
@@ -49,4 +64,13 @@ export const AuthService = {
   isAuthenticated: (): boolean => {
     return !!localStorage.getItem('authToken');
   }
+};
+
+export const getAuthenticatedUser = async (): Promise<User | null> => {
+  return await AuthService.getCurrentUser();
+};
+
+// Synchronous method to get cached user - won't make API calls
+export const getCachedUser = (): User | null => {
+  return currentUser;
 };

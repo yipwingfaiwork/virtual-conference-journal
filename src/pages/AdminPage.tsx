@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge"; // Add Badge import
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -20,7 +20,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -44,23 +43,25 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { getCurrentUser, users } from '@/lib/auth';
-import { activityLogs } from '@/lib/mockData';
+import { getCurrentUser } from '@/lib/auth';
 import AccessLevelBadge from '@/components/AccessLevelBadge';
+import { User as UserType, ActivityLog } from '@/lib/types';
+import apiClient from '@/services/api-service';
 
 const AdminPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const [usersList, setUsersList] = useState(users);
-  const [filteredUsers, setFilteredUsers] = useState(users);
+  const [usersList, setUsersList] = useState<UserType[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserType[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
   
-  const [formData, setFormData] = useState({
-    id: '',
+  const [formData, setFormData] = useState<Omit<UserType, 'id'> & { id?: string }>({
     name: '',
     email: '',
     phone: '',
@@ -71,21 +72,52 @@ const AdminPage = () => {
   });
   
   useEffect(() => {
-    if (!user || !user.isAdmin) {
-      toast({
-        title: "Access denied",
-        description: "You don't have permission to access the admin area.",
-        variant: "destructive",
-      });
-      navigate('/dashboard');
-      return;
-    }
+    const loadData = async () => {
+      setLoading(true);
+      const userData = await getCurrentUser();
+      
+      if (!userData || !userData.isAdmin) {
+        toast({
+          title: "Access denied",
+          description: "You don't have permission to access the admin area.",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
+        return;
+      }
+      
+      setUser(userData);
+      
+      // Fetch users and activity logs
+      try {
+        const [usersResponse, logsResponse] = await Promise.all([
+          apiClient.get('/users'),
+          apiClient.get('/activity-logs')
+        ]);
+        
+        setUsersList(usersResponse.data || []);
+        setActivityLogs(logsResponse.data || []);
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load administrative data",
+          variant: "destructive",
+        });
+        
+        // Temporary: use empty arrays until backend is ready
+        setUsersList([]);
+        setActivityLogs([]);
+      }
+      
+      setLoading(false);
+    };
     
-    setUsersList(users);
-  }, [navigate, toast, user]);
+    loadData();
+  }, [navigate, toast]);
   
   useEffect(() => {
-    if (searchTerm) {
+    if (searchTerm && usersList.length > 0) {
       const term = searchTerm.toLowerCase();
       setFilteredUsers(
         usersList.filter(u => 
@@ -99,14 +131,17 @@ const AdminPage = () => {
     }
   }, [searchTerm, usersList]);
   
-  if (!user || !user.isAdmin) {
+  if (loading || !user) {
+    return <div className="flex justify-center items-center h-screen">Loading admin panel...</div>;
+  }
+  
+  if (!user.isAdmin) {
     return null;
   }
   
   const handleAddUser = () => {
     setEditingUser(null);
     setFormData({
-      id: Math.random().toString(36).substring(7),
       name: '',
       email: '',
       phone: '',
@@ -118,20 +153,29 @@ const AdminPage = () => {
     setIsDialogOpen(true);
   };
   
-  const handleEditUser = (user: typeof users[0]) => {
+  const handleEditUser = (user: UserType) => {
     setEditingUser(user);
     setFormData({ ...user });
     setIsDialogOpen(true);
   };
   
-  const handleDeleteUser = (userId: string) => {
-    // In a real app, this would call an API
-    setUsersList(usersList.filter(u => u.id !== userId));
-    
-    toast({
-      title: "User deleted",
-      description: "The user has been permanently removed from the system.",
-    });
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await apiClient.delete(`/users/${userId}`);
+      setUsersList(usersList.filter(u => u.id !== userId));
+      
+      toast({
+        title: "User deleted",
+        description: "The user has been permanently removed from the system.",
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,7 +195,7 @@ const AdminPage = () => {
     setFormData(prev => ({ ...prev, isAdmin: checked }));
   };
   
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email) {
@@ -163,30 +207,42 @@ const AdminPage = () => {
       return;
     }
     
-    if (editingUser) {
-      // Update existing user
-      setUsersList(usersList.map(u => 
-        u.id === editingUser.id ? formData : u
-      ));
+    try {
+      if (editingUser) {
+        // Update existing user
+        const response = await apiClient.put(`/users/${editingUser.id}`, formData);
+        setUsersList(usersList.map(u => 
+          u.id === editingUser.id ? response.data : u
+        ));
+        
+        toast({
+          title: "User updated",
+          description: `User ${formData.name} has been updated successfully.`,
+        });
+      } else {
+        // Add new user
+        const response = await apiClient.post('/users', formData);
+        setUsersList([...usersList, response.data]);
+        
+        toast({
+          title: "User added",
+          description: `User ${formData.name} has been added successfully.`,
+        });
+      }
       
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving user:', error);
       toast({
-        title: "User updated",
-        description: `User ${formData.name} has been updated successfully.`,
-      });
-    } else {
-      // Add new user
-      setUsersList([...usersList, formData]);
-      
-      toast({
-        title: "User added",
-        description: `User ${formData.name} has been added successfully.`,
+        title: "Error",
+        description: "Failed to save user. Please try again.",
+        variant: "destructive",
       });
     }
-    
-    setIsDialogOpen(false);
   };
 
   return (
+    
     <div className="p-4 sm:p-6 md:p-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-terracotta mb-6">Admin Dashboard</h1>
       
@@ -453,7 +509,7 @@ const AdminPage = () => {
                 <TableBody>
                   {activityLogs.length > 0 ? (
                     activityLogs.map((log) => {
-                      const logUser = users.find(u => u.id === log.userId);
+                      const logUser = usersList.find(u => u.id === log.userId);
                       return (
                         <TableRow key={log.id}>
                           <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
@@ -481,6 +537,7 @@ const AdminPage = () => {
         </TabsContent>
       </Tabs>
     </div>
+  
   );
 };
 

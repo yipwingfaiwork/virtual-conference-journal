@@ -11,11 +11,13 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { getCurrentUser, updateUser, changePassword } from '@/lib/auth';
 import AccessLevelBadge from '@/components/AccessLevelBadge';
+import { User as UserType } from '@/lib/types';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState(true);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -34,22 +36,31 @@ const ProfilePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    const loadUser = async () => {
+      setLoading(true);
+      const userData = await getCurrentUser();
+      
+      if (!userData) {
+        navigate('/login');
+        return;
+      }
+      
+      setUser(userData);
+      setFormData({
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        address: userData.address,
+        department: userData.department,
+      });
+      setLoading(false);
+    };
     
-    setFormData({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      address: user.address,
-      department: user.department,
-    });
-  }, [navigate, user]);
+    loadUser();
+  }, [navigate]);
   
-  if (!user) {
-    return null;
+  if (loading || !user) {
+    return <div className="flex justify-center items-center h-screen">Loading profile...</div>;
   }
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,12 +73,12 @@ const ProfilePage = () => {
     setPasswords(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      const updatedUser = updateUser({
+      const updatedUser = await updateUser({
         ...user,
         name: formData.name,
         email: formData.email,
@@ -93,7 +104,7 @@ const ProfilePage = () => {
     }
   };
   
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -109,7 +120,11 @@ const ProfilePage = () => {
     
     try {
       // In a real app, you'd verify the current password first
-      const success = changePassword(user.id, passwords.newPassword);
+      const success = await changePassword(
+        user.id, 
+        passwords.currentPassword,
+        passwords.newPassword
+      );
       
       if (success) {
         setPasswords({

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Calendar, Clock, Building, Users, Video, FileText, AlignLeft, Save, ArrowLeft } from 'lucide-react';
@@ -16,21 +15,23 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { conferenceRecords } from '@/lib/mockData';
 import { canUserModifyRecord, getCurrentUser } from '@/lib/auth';
-import { ConferenceRecord } from '@/lib/types';
-
-type FormMode = 'create' | 'edit';
+import { ConferenceRecord, User } from '@/lib/types';
+import { useRecord, useRecords } from '@/hooks/use-records';
 
 const RecordForm = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const user = getCurrentUser();
-  const mode: FormMode = id ? 'edit' : 'create';
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const defaultRecord: ConferenceRecord = {
-    id: '',
+  const { record: existingRecord, isLoading: recordLoading } = useRecord(id || '');
+  const { createRecord, updateRecord } = useRecords();
+  
+  const mode = id ? 'edit' : 'create';
+  
+  const [record, setRecord] = useState<Partial<ConferenceRecord>>({
     date: new Date().toISOString().split('T')[0],
     duration: '',
     department: '',
@@ -39,35 +40,31 @@ const RecordForm = () => {
     videoLink: '',
     textRecord: '',
     outline: '',
-    createdBy: user?.id || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+  });
   
-  const [record, setRecord] = useState<ConferenceRecord>(defaultRecord);
   const [participantsInput, setParticipantsInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    if (mode === 'edit' && id) {
-      const existingRecord = conferenceRecords.find(r => r.id === id);
+    const loadData = async () => {
+      setLoading(true);
+      const userData = await getCurrentUser();
       
-      if (!existingRecord) {
-        toast({
-          title: "Record not found",
-          description: "The requested record does not exist or you don't have permission to edit it.",
-          variant: "destructive",
-        });
-        navigate('/records');
+      if (!userData) {
+        navigate('/login');
         return;
       }
       
-      if (!canUserModifyRecord(user, existingRecord.createdBy)) {
+      setUser(userData);
+      setLoading(false);
+    };
+    
+    loadData();
+  }, [navigate]);
+  
+  useEffect(() => {
+    if (mode === 'edit' && existingRecord && !recordLoading) {
+      if (user && !canUserModifyRecord(user, existingRecord.createdBy)) {
         toast({
           title: "Permission denied",
           description: "You don't have permission to edit this record.",
@@ -80,10 +77,14 @@ const RecordForm = () => {
       setRecord(existingRecord);
       setParticipantsInput(existingRecord.participants.join(', '));
     }
-  }, [id, mode, navigate, toast, user]);
+  }, [existingRecord, mode, navigate, recordLoading, toast, user]);
   
-  if (!user) {
-    return null;
+  if (loading || !user) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
+  
+  if (mode === 'edit' && recordLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading record...</div>;
   }
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -120,7 +121,17 @@ const RecordForm = () => {
     setIsSubmitting(true);
     
     try {
-      // In a real app, this would call an API to save the record
+      if (mode === 'create') {
+        createRecord({
+          ...record,
+          createdBy: user.id
+        });
+      } else if (mode === 'edit' && id) {
+        updateRecord({
+          id,
+          data: record
+        });
+      }
       
       const successMessage = mode === 'create'
         ? "Conference record created successfully"
@@ -144,6 +155,7 @@ const RecordForm = () => {
   };
 
   return (
+    
     <div className="p-4 sm:p-6 md:p-8">
       <div className="mb-6">
         <Button 

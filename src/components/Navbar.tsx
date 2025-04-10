@@ -12,23 +12,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getCurrentUser, logout } from '@/lib/auth';
+import { logout, getCachedUser, getCurrentUser } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
+import { User } from '@/lib/types';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState(getCurrentUser());
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   
   useEffect(() => {
-    // Update user when it changes
-    setUser(getCurrentUser());
+    // Load user data when component mounts or route changes
+    const loadUser = async () => {
+      // First try to get cached user for immediate UI rendering
+      const cachedUser = getCachedUser();
+      if (cachedUser) setUser(cachedUser);
+      
+      // Then fetch fresh user data
+      const freshUser = await getCurrentUser();
+      setUser(freshUser);
+    };
+    
+    loadUser();
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
     toast({
       title: "Logged out successfully",
       description: "You have been logged out of your account",

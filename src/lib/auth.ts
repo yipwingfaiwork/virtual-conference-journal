@@ -1,21 +1,11 @@
 
 import { User } from './types';
 import apiClient from '../services/api-service';
-
-// Store the current user in memory during the session
-let currentUser: User | null = null;
+import { AuthService, getCachedUser as getCachedUserService, getAuthenticatedUser } from '../services/auth-service';
 
 export const login = async (email: string, password: string): Promise<User | null> => {
   try {
-    const response = await apiClient.post('/auth/login', { email, password });
-    const user = response.data.user;
-    
-    // Store the JWT token in localStorage
-    if (response.data.token) {
-      localStorage.setItem('authToken', response.data.token);
-    }
-    
-    currentUser = user;
+    const user = await AuthService.login(email, password);
     return user;
   } catch (error) {
     console.error('Login error:', error);
@@ -24,43 +14,23 @@ export const login = async (email: string, password: string): Promise<User | nul
 };
 
 export const logout = async (): Promise<void> => {
-  try {
-    await apiClient.post('/auth/logout');
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    // Always clear local storage and current user
-    localStorage.removeItem('authToken');
-    currentUser = null;
-  }
+  await AuthService.logout();
 };
 
+// Async function to get user data - might make API call
 export const getCurrentUser = async (): Promise<User | null> => {
-  if (currentUser) return currentUser;
-  
-  // Try to get the current user from the API if we have a token
-  const token = localStorage.getItem('authToken');
-  if (!token) return null;
-  
-  try {
-    const response = await apiClient.get('/auth/me');
-    currentUser = response.data;
-    return currentUser;
-  } catch (error) {
-    console.error('Error fetching current user:', error);
-    localStorage.removeItem('authToken'); // Clear invalid token
-    return null;
-  }
+  return await getAuthenticatedUser();
+};
+
+// Sync function to get cached user - won't make API call
+export const getCachedUser = (): User | null => {
+  return getCachedUserService();
 };
 
 export const updateUser = async (updatedUser: User): Promise<User> => {
   try {
     const response = await apiClient.put(`/users/${updatedUser.id}`, updatedUser);
     const user = response.data;
-    
-    if (currentUser && currentUser.id === user.id) {
-      currentUser = user;
-    }
     
     return user;
   } catch (error) {
@@ -82,32 +52,100 @@ export const changePassword = async (userId: string, oldPassword: string, newPas
   }
 };
 
-export const canUserAccessRecord = async (userId: string, createdByUserId: string): Promise<boolean> => {
-  try {
-    const response = await apiClient.get(`/users/${userId}/can-access/${createdByUserId}`);
-    return response.data.canAccess;
-  } catch (error) {
-    console.error('Access check error:', error);
-    return false;
-  }
+// These functions will need to be implemented with backend calls when backend is ready
+export const canUserAccessRecord = (user: User | null, createdByUserId: string): boolean => {
+  if (!user) return false;
+  return true; // Or implement your actual access logic
 };
 
-export const canUserModifyRecord = async (userId: string, createdByUserId: string): Promise<boolean> => {
-  try {
-    const response = await apiClient.get(`/users/${userId}/can-modify/${createdByUserId}`);
-    return response.data.canModify;
-  } catch (error) {
-    console.error('Modify check error:', error);
-    return false;
-  }
+export const canUserModifyRecord = (user: User | null, createdByUserId: string): boolean => {
+  if (!user) return false;
+  // Simple logic: users can modify their own records or if they're admin
+  return user.id === createdByUserId || user.isAdmin;
 };
 
-export const canUserDeleteRecord = async (userId: string): Promise<boolean> => {
-  try {
-    const response = await apiClient.get(`/users/${userId}/can-delete`);
-    return response.data.canDelete;
-  } catch (error) {
-    console.error('Delete check error:', error);
-    return false;
-  }
+export const canUserDeleteRecord = (user: User | null): boolean => {
+  if (!user) return false;
+  return user.isAdmin; // Only admins can delete records
 };
+
+// Mock users data for AdminPage while building out the real API
+export const users: User[] = [
+  {
+    id: "1",
+    name: "Admin User",
+    email: "admin@example.com",
+    phone: "123-456-7890",
+    address: "123 Admin St",
+    department: "Management",
+    accessLevel: 3,
+    isAdmin: true
+  },
+  {
+    id: "2",
+    name: "Regular User",
+    email: "user@example.com",
+    phone: "098-765-4321",
+    address: "456 User Ave",
+    department: "Operations",
+    accessLevel: 1,
+    isAdmin: false
+  }
+];
+
+// Mock activity logs for AdminPage
+export const activityLogs = [
+  {
+    id: "1",
+    userId: "1",
+    action: "Login",
+    details: "User logged in successfully",
+    timestamp: "2023-05-01T08:30:00Z"
+  },
+  {
+    id: "2",
+    userId: "2",
+    action: "Record Created",
+    details: "Created new conference record",
+    timestamp: "2023-05-01T09:15:00Z"
+  },
+  {
+    id: "3",
+    userId: "1",
+    action: "Record Updated",
+    details: "Updated conference record",
+    timestamp: "2023-05-01T10:45:00Z"
+  }
+];
+
+// Mock conference records
+export const conferenceRecords = [
+  {
+    id: "1",
+    date: "2023-05-01",
+    duration: "1 hour",
+    department: "Operations",
+    title: "Weekly Operations Meeting",
+    participants: ["John Smith", "Jane Doe", "Robert Johnson"],
+    videoLink: "https://example.com/video1",
+    textRecord: "Discussed upcoming projects and resource allocation.",
+    outline: "1. Project Updates\n2. Resource Planning\n3. Open Issues",
+    createdBy: "1",
+    createdAt: "2023-05-01T08:00:00Z",
+    updatedAt: "2023-05-01T08:00:00Z"
+  },
+  {
+    id: "2",
+    date: "2023-05-02",
+    duration: "30 minutes",
+    department: "Finance",
+    title: "Budget Review",
+    participants: ["Alice Brown", "Bob Miller"],
+    videoLink: "https://example.com/video2",
+    textRecord: "Reviewed quarterly budget and approved expenditures.",
+    outline: "1. Budget Overview\n2. Expense Reports\n3. Projections",
+    createdBy: "2",
+    createdAt: "2023-05-02T14:00:00Z",
+    updatedAt: "2023-05-02T14:00:00Z"
+  }
+];
