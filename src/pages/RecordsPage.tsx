@@ -87,9 +87,12 @@ const RecordsPage = () => {
         uniqueCreatorIds.map(async (creatorId) => {
           try {
             const response = await apiClient.get(`/users/${creatorId}`);
-            // Check if response.data exists and has a name property
-            if (response.data && typeof response.data === 'object' && 'name' in response.data) {
-              names[creatorId] = response.data.name;
+            // Properly type the response data and check property existence
+            const userData = response.data as { name?: string };
+            
+            // Safely access the name property, with fallback
+            if (userData && typeof userData === 'object' && userData.name) {
+              names[creatorId] = userData.name;
             } else {
               names[creatorId] = 'Unknown';
             }
