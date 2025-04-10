@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecordsAPI } from '../services/api-service';
 import { toast } from '@/hooks/use-toast';
+import { ConferenceRecord } from '@/lib/types';
 
 export const useRecords = (filters = {}) => {
   const queryClient = useQueryClient();
@@ -14,7 +15,7 @@ export const useRecords = (filters = {}) => {
   
   // Mutation for creating a new record
   const createRecord = useMutation({
-    mutationFn: (recordData: any) => RecordsAPI.create(recordData),
+    mutationFn: (recordData: Partial<ConferenceRecord>) => RecordsAPI.create(recordData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['records'] });
       toast({
@@ -34,7 +35,7 @@ export const useRecords = (filters = {}) => {
   
   // Mutation for updating a record
   const updateRecord = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => RecordsAPI.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<ConferenceRecord> }) => RecordsAPI.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['records'] });
       toast({

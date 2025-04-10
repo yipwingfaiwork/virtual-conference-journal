@@ -32,7 +32,7 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      const user = login(email, password);
+      const user = await login(email, password);
       
       if (user) {
         toast({
@@ -55,6 +55,7 @@ const LoginPage = () => {
         description: "Something went wrong. Please try again later.",
         variant: "destructive",
       });
+      console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -134,11 +135,6 @@ const LoginPage = () => {
                 </CardFooter>
               </form>
             </Card>
-            <div className="mt-4 text-center text-sm text-gray">
-              <p>For demo purposes, use these credentials:</p>
-              <p className="mt-1">Email: level1@abc-company.com</p>
-              <p>Password: password (any value works in this demo)</p>
-            </div>
           </TabsContent>
           
           <TabsContent value="admin">
@@ -201,11 +197,6 @@ const LoginPage = () => {
                 </CardFooter>
               </form>
             </Card>
-            <div className="mt-4 text-center text-sm text-gray">
-              <p>For demo purposes, use these credentials:</p>
-              <p className="mt-1">Email: admin@abc-company.com</p>
-              <p>Password: password (any value works in this demo)</p>
-            </div>
           </TabsContent>
         </Tabs>
       </div>

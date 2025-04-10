@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Video, FileText, Clock, Users, PlusCircle, Search } from 'lucide-react';
@@ -15,30 +14,48 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCurrentUser } from '@/lib/auth';
-import { conferenceRecords } from '@/lib/mockData';
 import { ConferenceRecord } from '@/lib/types';
 import AccessLevelBadge from '@/components/AccessLevelBadge';
+import { useRecords } from '@/hooks/use-records';
 
 const Dashboard = () => {
-  const [user, setUser] = useState(getCurrentUser());
-  const [recentRecords, setRecentRecords] = useState<ConferenceRecord[]>([]);
+  const [user, setUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   
-  useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    
-    // Get recent records
-    setRecentRecords(
-      conferenceRecords
+  // Use the hook to fetch records from API
+  const { records, isLoading, error } = useRecords();
+  
+  // Sort and slice to get recent records once data is loaded
+  const recentRecords = records 
+    ? [...records]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 5)
-    );
-  }, [navigate, user]);
+    : [];
+  
+  // Get department stats
+  const departmentStats = records 
+    ? ['Operations', 'Finance', 'Management', 'Administration'].map(dept => ({
+        name: dept,
+        count: records.filter(record => record.department === dept).length
+      }))
+    : [];
+  
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      
+      // Redirect to login if not authenticated
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      
+      setUser(currentUser);
+    };
+    
+    fetchUser();
+  }, [navigate]);
   
   if (!user) {
     return null;
@@ -71,6 +88,7 @@ const Dashboard = () => {
         </div>
       </div>
       
+      {/* Quick Search and Dashboard Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
@@ -108,17 +126,20 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {(['Operations', 'Finance', 'Management', 'Administration'] as const).map(dept => {
-                const count = conferenceRecords.filter(record => record.department === dept).length;
-                return (
-                  <div key={dept} className="flex justify-between items-center">
-                    <span>{dept}</span>
+              {isLoading ? (
+                <p className="text-muted-foreground">Loading stats...</p>
+              ) : error ? (
+                <p className="text-destructive">Error loading stats</p>
+              ) : (
+                departmentStats.map(dept => (
+                  <div key={dept.name} className="flex justify-between items-center">
+                    <span>{dept.name}</span>
                     <span className="text-sm font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
-                      {count} records
+                      {dept.count} records
                     </span>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -169,52 +190,67 @@ const Dashboard = () => {
         </Card>
       </div>
       
+      {/* Recent Records Table */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Conference Records</CardTitle>
           <CardDescription>The latest conference records in the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead className="hidden md:table-cell">Department</TableHead>
-                <TableHead className="hidden sm:table-cell">Duration</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentRecords.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {new Date(record.date).toLocaleDateString()}
-                    </div>
-                  </TableCell>
-                  <TableCell>{record.title}</TableCell>
-                  <TableCell className="hidden md:table-cell">{record.department}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {record.duration}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate(`/records/${record.id}`)}
-                    >
-                      View
-                    </Button>
-                  </TableCell>
+          {isLoading ? (
+            <p className="text-center py-8">Loading records...</p>
+          ) : error ? (
+            <p className="text-center text-destructive py-8">Error loading records</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead className="hidden md:table-cell">Department</TableHead>
+                  <TableHead className="hidden sm:table-cell">Duration</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentRecords.length > 0 ? (
+                  recentRecords.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center">
+                          <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {new Date(record.date).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>{record.title}</TableCell>
+                      <TableCell className="hidden md:table-cell">{record.department}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex items-center">
+                          <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {record.duration}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/records/${record.id}`)}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No records found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
         <CardFooter>
           <Button 

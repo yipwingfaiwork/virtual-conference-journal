@@ -36,45 +36,80 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { conferenceRecords } from '@/lib/mockData';
 import { ConferenceRecord } from '@/lib/types';
-import { canUserAccessRecord, getCurrentUser } from '@/lib/auth';
-import { users } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
+import { useRecords } from '@/hooks/use-records';
+import apiClient from '@/services/api-service';
 
 const RecordsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = getCurrentUser();
-  const [records, setRecords] = useState<ConferenceRecord[]>([]);
-  const [filteredRecords, setFilteredRecords] = useState<ConferenceRecord[]>([]);
+  const [user, setUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [filteredRecords, setFilteredRecords] = useState<ConferenceRecord[]>([]);
+  const [creatorNames, setCreatorNames] = useState<Record<string, string>>({});
+  
+  // Fetch records from API using our hook
+  const { records, isLoading, error } = useRecords({
+    department: departmentFilter !== 'all' ? departmentFilter : undefined
+  });
   
   // Parse search query from URL
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      setUser(currentUser);
+    };
+    
+    fetchUser();
     
     const searchParams = new URLSearchParams(location.search);
     const search = searchParams.get('search');
     if (search) {
       setSearchTerm(search);
     }
+  }, [location.search, navigate]);
+  
+  // Fetch creator names for the records
+  useEffect(() => {
+    const fetchCreatorNames = async () => {
+      if (!records) return;
+      
+      const uniqueCreatorIds = [...new Set(records.map(record => record.createdBy))];
+      const names: Record<string, string> = {};
+      
+      await Promise.all(
+        uniqueCreatorIds.map(async (creatorId) => {
+          try {
+            const response = await apiClient.get(`/users/${creatorId}`);
+            names[creatorId] = response.data.name;
+          } catch (error) {
+            console.error(`Error fetching user ${creatorId}:`, error);
+            names[creatorId] = 'Unknown';
+          }
+        })
+      );
+      
+      setCreatorNames(names);
+    };
     
-    // Get visible records based on user access
-    const accessibleRecords = conferenceRecords.filter(record => 
-      canUserAccessRecord(user, record.createdBy)
-    );
-    
-    setRecords(accessibleRecords);
-  }, [location.search, navigate, user]);
+    fetchCreatorNames();
+  }, [records]);
   
   // Filter records when search/filters change
   useEffect(() => {
-    let results = records;
+    if (!records) {
+      setFilteredRecords([]);
+      return;
+    }
+    
+    let results = [...records];
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -85,14 +120,8 @@ const RecordsPage = () => {
       );
     }
     
-    if (departmentFilter && departmentFilter !== 'all') {
-      results = results.filter(record => 
-        record.department === departmentFilter
-      );
-    }
-    
     setFilteredRecords(results);
-  }, [records, searchTerm, departmentFilter]);
+  }, [records, searchTerm]);
   
   if (!user) {
     return null;
@@ -104,8 +133,7 @@ const RecordsPage = () => {
   };
   
   const getCreatorName = (userId: string) => {
-    const creator = users.find(u => u.id === userId);
-    return creator ? creator.name : 'Unknown';
+    return creatorNames[userId] || 'Unknown';
   };
 
   return (
@@ -184,112 +212,118 @@ const RecordsPage = () => {
       </Card>
       
       <div className="rounded-md border shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead className="hidden md:table-cell">Department</TableHead>
-              <TableHead className="hidden sm:table-cell">Created By</TableHead>
-              <TableHead className="hidden lg:table-cell">Duration</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRecords.length > 0 ? (
-              filteredRecords.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center">
-                      <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {new Date(record.date).toLocaleDateString()}
-                    </div>
-                  </TableCell>
-                  <TableCell>{record.title}</TableCell>
-                  <TableCell className="hidden md:table-cell">{record.department}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <div className="flex items-center">
-                      <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {getCreatorName(record.createdBy)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <div className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {record.duration}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => navigate(`/records/${record.id}`)}
-                      >
-                        View
-                      </Button>
-                      
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="hidden sm:flex"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[625px]">
-                          <DialogHeader>
-                            <DialogTitle className="text-terracotta">{record.title}</DialogTitle>
-                            <DialogDescription>
-                              {record.department} • {new Date(record.date).toLocaleDateString()} • {record.duration}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div>
-                              <h3 className="text-sm font-medium mb-1">Participants</h3>
-                              <p className="text-sm">{record.participants.join(', ')}</p>
-                            </div>
-                            <Separator />
-                            <div>
-                              <h3 className="text-sm font-medium mb-1">Meeting Outline</h3>
-                              <p className="text-sm whitespace-pre-line">{record.outline}</p>
-                            </div>
-                            <Separator />
-                            <div>
-                              <h3 className="text-sm font-medium mb-1">Text Record Preview</h3>
-                              <p className="text-sm line-clamp-4">{record.textRecord}</p>
-                            </div>
-                          </div>
-                          <div className="flex justify-between">
-                            <Button variant="outline" onClick={() => navigate(`/records/${record.id}`)}>
-                              View Full Record
+        {isLoading ? (
+          <div className="text-center p-8">Loading records...</div>
+        ) : error ? (
+          <div className="text-center p-8 text-destructive">Error loading records</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead className="hidden md:table-cell">Department</TableHead>
+                <TableHead className="hidden sm:table-cell">Created By</TableHead>
+                <TableHead className="hidden lg:table-cell">Duration</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRecords.length > 0 ? (
+                filteredRecords.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center">
+                        <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {new Date(record.date).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    <TableCell>{record.title}</TableCell>
+                    <TableCell className="hidden md:table-cell">{record.department}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <div className="flex items-center">
+                        <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {getCreatorName(record.createdBy)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {record.duration}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/records/${record.id}`)}
+                        >
+                          View
+                        </Button>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="hidden sm:flex"
+                            >
+                              <FileText className="h-4 w-4" />
                             </Button>
-                            {record.videoLink && (
-                              <Button variant="outline" className="gap-2" asChild>
-                                <a href={record.videoLink} target="_blank" rel="noopener noreferrer">
-                                  <Video className="h-4 w-4" />
-                                  Video
-                                </a>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[625px]">
+                            <DialogHeader>
+                              <DialogTitle className="text-terracotta">{record.title}</DialogTitle>
+                              <DialogDescription>
+                                {record.department} • {new Date(record.date).toLocaleDateString()} • {record.duration}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div>
+                                <h3 className="text-sm font-medium mb-1">Participants</h3>
+                                <p className="text-sm">{record.participants.join(', ')}</p>
+                              </div>
+                              <Separator />
+                              <div>
+                                <h3 className="text-sm font-medium mb-1">Meeting Outline</h3>
+                                <p className="text-sm whitespace-pre-line">{record.outline}</p>
+                              </div>
+                              <Separator />
+                              <div>
+                                <h3 className="text-sm font-medium mb-1">Text Record Preview</h3>
+                                <p className="text-sm line-clamp-4">{record.textRecord}</p>
+                              </div>
+                            </div>
+                            <div className="flex justify-between">
+                              <Button variant="outline" onClick={() => navigate(`/records/${record.id}`)}>
+                                View Full Record
                               </Button>
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                              {record.videoLink && (
+                                <Button variant="outline" className="gap-2" asChild>
+                                  <a href={record.videoLink} target="_blank" rel="noopener noreferrer">
+                                    <Video className="h-4 w-4" />
+                                    Video
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No records found
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
-                  No records found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );

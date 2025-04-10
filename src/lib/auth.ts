@@ -1,109 +1,113 @@
 
 import { User } from './types';
+import apiClient from '../services/api-service';
 
-// Mock authentication - in a real app, this would connect to a backend
-export const users: User[] = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@abc-company.com",
-    phone: "123-456-7890",
-    address: "123 Admin St, City",
-    department: "Administration",
-    accessLevel: 3,
-    isAdmin: true
-  },
-  {
-    id: "2",
-    name: "Level 3 User",
-    email: "level3@abc-company.com",
-    phone: "123-456-7891",
-    address: "123 Main St, City",
-    department: "Management",
-    accessLevel: 3,
-    isAdmin: false
-  },
-  {
-    id: "3",
-    name: "Level 2 User",
-    email: "level2@abc-company.com",
-    phone: "123-456-7892",
-    address: "456 Oak St, City",
-    department: "Finance",
-    accessLevel: 2,
-    isAdmin: false
-  },
-  {
-    id: "4",
-    name: "Level 1 User",
-    email: "level1@abc-company.com",
-    phone: "123-456-7893",
-    address: "789 Pine St, City",
-    department: "Operations",
-    accessLevel: 1,
-    isAdmin: false
-  }
-];
-
+// Store the current user in memory during the session
 let currentUser: User | null = null;
 
-export const login = (email: string, password: string): User | null => {
-  // In a real app, you would validate the password
-  const user = users.find(u => u.email === email);
-  if (user) {
+export const login = async (email: string, password: string): Promise<User | null> => {
+  try {
+    const response = await apiClient.post('/auth/login', { email, password });
+    const user = response.data.user;
+    
+    // Store the JWT token in localStorage
+    if (response.data.token) {
+      localStorage.setItem('authToken', response.data.token);
+    }
+    
     currentUser = user;
     return user;
+  } catch (error) {
+    console.error('Login error:', error);
+    return null;
   }
-  return null;
 };
 
-export const logout = (): void => {
-  currentUser = null;
+export const logout = async (): Promise<void> => {
+  try {
+    await apiClient.post('/auth/logout');
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // Always clear local storage and current user
+    localStorage.removeItem('authToken');
+    currentUser = null;
+  }
 };
 
-export const getCurrentUser = (): User | null => {
-  return currentUser;
+export const getCurrentUser = async (): Promise<User | null> => {
+  if (currentUser) return currentUser;
+  
+  // Try to get the current user from the API if we have a token
+  const token = localStorage.getItem('authToken');
+  if (!token) return null;
+  
+  try {
+    const response = await apiClient.get('/auth/me');
+    currentUser = response.data;
+    return currentUser;
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    localStorage.removeItem('authToken'); // Clear invalid token
+    return null;
+  }
 };
 
-export const updateUser = (updatedUser: User): User => {
-  const index = users.findIndex(u => u.id === updatedUser.id);
-  if (index !== -1) {
-    users[index] = updatedUser;
-    if (currentUser && currentUser.id === updatedUser.id) {
-      currentUser = updatedUser;
+export const updateUser = async (updatedUser: User): Promise<User> => {
+  try {
+    const response = await apiClient.put(`/users/${updatedUser.id}`, updatedUser);
+    const user = response.data;
+    
+    if (currentUser && currentUser.id === user.id) {
+      currentUser = user;
     }
-    return updatedUser;
+    
+    return user;
+  } catch (error) {
+    console.error('Update user error:', error);
+    throw new Error("Failed to update user");
   }
-  throw new Error("User not found");
 };
 
-export const changePassword = (userId: string, newPassword: string): boolean => {
-  // In a real app, you would update the password in the database
-  return true;
+export const changePassword = async (userId: string, oldPassword: string, newPassword: string): Promise<boolean> => {
+  try {
+    await apiClient.post(`/users/${userId}/change-password`, { 
+      oldPassword, 
+      newPassword 
+    });
+    return true;
+  } catch (error) {
+    console.error('Change password error:', error);
+    return false;
+  }
 };
 
-export const canUserAccessRecord = (user: User, createdByUserId: string): boolean => {
-  if (user.isAdmin) return true;
-  
-  if (user.id === createdByUserId) return true;
-  
-  const createdByUser = users.find(u => u.id === createdByUserId);
-  if (!createdByUser) return false;
-  
-  return user.accessLevel >= createdByUser.accessLevel;
+export const canUserAccessRecord = async (userId: string, createdByUserId: string): Promise<boolean> => {
+  try {
+    const response = await apiClient.get(`/users/${userId}/can-access/${createdByUserId}`);
+    return response.data.canAccess;
+  } catch (error) {
+    console.error('Access check error:', error);
+    return false;
+  }
 };
 
-export const canUserModifyRecord = (user: User, createdByUserId: string): boolean => {
-  if (user.isAdmin) return true;
-  
-  if (user.id === createdByUserId) return true;
-  
-  const createdByUser = users.find(u => u.id === createdByUserId);
-  if (!createdByUser) return false;
-  
-  return user.accessLevel > createdByUser.accessLevel;
+export const canUserModifyRecord = async (userId: string, createdByUserId: string): Promise<boolean> => {
+  try {
+    const response = await apiClient.get(`/users/${userId}/can-modify/${createdByUserId}`);
+    return response.data.canModify;
+  } catch (error) {
+    console.error('Modify check error:', error);
+    return false;
+  }
 };
 
-export const canUserDeleteRecord = (user: User): boolean => {
-  return user.isAdmin;
+export const canUserDeleteRecord = async (userId: string): Promise<boolean> => {
+  try {
+    const response = await apiClient.get(`/users/${userId}/can-delete`);
+    return response.data.canDelete;
+  } catch (error) {
+    console.error('Delete check error:', error);
+    return false;
+  }
 };

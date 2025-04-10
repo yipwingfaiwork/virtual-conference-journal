@@ -18,24 +18,60 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { conferenceRecords } from '@/lib/mockData';
 import { canUserDeleteRecord, canUserModifyRecord, getCurrentUser } from '@/lib/auth';
-import { users } from '@/lib/auth';
+import { useRecord } from '@/hooks/use-records';
+import apiClient from '@/services/api-service';
 
 const RecordDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [record, setRecord] = useState(conferenceRecords.find(r => r.id === id));
-  const user = getCurrentUser();
+  const [user, setUser] = useState(null);
+  const [creator, setCreator] = useState(null);
+  const [canModify, setCanModify] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+  
+  // Use the hook to fetch the record data
+  const { record, isLoading, error } = useRecord(id || '');
   
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    const fetchUserAndPermissions = async () => {
+      const currentUser = await getCurrentUser();
+      
+      if (!currentUser) {
+        navigate('/login');
+        return;
+      }
+      
+      setUser(currentUser);
+      
+      if (record) {
+        // Fetch creator info
+        try {
+          const creatorResponse = await apiClient.get(`/users/${record.createdBy}`);
+          setCreator(creatorResponse.data);
+        } catch (error) {
+          console.error('Error fetching creator data:', error);
+        }
+        
+        // Check permissions
+        try {
+          const modifyResponse = await canUserModifyRecord(currentUser.id, record.createdBy);
+          setCanModify(modifyResponse);
+          
+          const deleteResponse = await canUserDeleteRecord(currentUser.id);
+          setCanDelete(deleteResponse);
+        } catch (error) {
+          console.error('Error checking permissions:', error);
+        }
+      }
+    };
     
-    if (!record) {
+    fetchUserAndPermissions();
+  }, [id, navigate, record]);
+  
+  useEffect(() => {
+    if (error) {
       toast({
         title: "Record not found",
         description: "The requested record does not exist or you don't have permission to view it.",
@@ -43,27 +79,36 @@ const RecordDetail = () => {
       });
       navigate('/records');
     }
-  }, [id, navigate, record, toast, user]);
+  }, [error, navigate, toast]);
   
-  if (!user || !record) {
+  if (!user || isLoading) {
+    return (
+      <div className="p-4 sm:p-6 md:p-8 text-center">
+        <p>Loading record...</p>
+      </div>
+    );
+  }
+  
+  if (!record) {
     return null;
   }
   
-  const canModify = canUserModifyRecord(user, record.createdBy);
-  const canDelete = canUserDeleteRecord(user);
-  
-  const getCreatorName = (userId: string) => {
-    const creator = users.find(u => u.id === userId);
-    return creator ? creator.name : 'Unknown';
-  };
-  
-  const handleDelete = () => {
-    // In a real app, this would call an API to delete the record
-    toast({
-      title: "Record deleted",
-      description: "The conference record has been permanently deleted.",
-    });
-    navigate('/records');
+  const handleDelete = async () => {
+    try {
+      await apiClient.delete(`/records/${id}`);
+      toast({
+        title: "Record deleted",
+        description: "The conference record has been permanently deleted.",
+      });
+      navigate('/records');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete the record",
+        variant: "destructive",
+      });
+      console.error('Error deleting record:', error);
+    }
   };
 
   return (
@@ -151,7 +196,7 @@ const RecordDetail = () => {
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-2 text-muted-foreground" />
               <span className="text-sm text-muted-foreground mr-2">Created by:</span>
-              <span>{getCreatorName(record.createdBy)}</span>
+              <span>{creator ? creator.name : 'Unknown'}</span>
             </div>
           </CardContent>
         </Card>
