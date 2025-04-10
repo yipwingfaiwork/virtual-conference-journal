@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PlusCircle, Search, Filter, Calendar, Clock, User, Video, FileText, RefreshCw } from 'lucide-react';
@@ -39,6 +40,11 @@ import { ConferenceRecord } from '@/lib/types';
 import { getCurrentUser } from '@/lib/auth';
 import { useRecords } from '@/hooks/use-records';
 import apiClient from '@/services/api-service';
+
+interface UserResponse {
+  name?: string;
+  [key: string]: any; // To allow for other properties that might be in the response
+}
 
 const RecordsPage = () => {
   const navigate = useNavigate();
@@ -87,15 +93,11 @@ const RecordsPage = () => {
         uniqueCreatorIds.map(async (creatorId) => {
           try {
             const response = await apiClient.get(`/users/${creatorId}`);
-            // Properly type the response data and check property existence
-            const userData = response.data as { name?: string };
+            // Properly cast the response data to our interface
+            const userData = response.data as UserResponse;
             
             // Safely access the name property, with fallback
-            if (userData && typeof userData === 'object' && userData.name) {
-              names[creatorId] = userData.name;
-            } else {
-              names[creatorId] = 'Unknown';
-            }
+            names[creatorId] = userData?.name || 'Unknown';
           } catch (error) {
             console.error(`Error fetching user ${creatorId}:`, error);
             names[creatorId] = 'Unknown';
