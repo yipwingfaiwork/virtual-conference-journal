@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Video, FileText, Clock, Users, PlusCircle, Search } from 'lucide-react';
@@ -17,6 +18,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { ConferenceRecord } from '@/lib/types';
 import AccessLevelBadge from '@/components/AccessLevelBadge';
 import { useRecords } from '@/hooks/use-records';
+import DashboardChart from '@/components/dashboard/DashboardChart';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -88,8 +90,10 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {/* Quick Search and Dashboard Stats */}
+      {/* Chart and Dashboard Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <DashboardChart />
+        
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg font-medium">Quick Search</CardTitle>

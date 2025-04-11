@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="text-center md:text-left mb-4 md:mb-0">
-            <h2 className="text-lg font-semibold text-terracotta">ABC Company</h2>
+            <h2 className="text-lg font-semibold text-terracotta">Relax Hotel Group</h2>
             <p className="mt-1 text-sm">Virtual Conference Records Management</p>
           </div>
           
@@ -27,7 +27,7 @@ const Footer = () => {
         </div>
         
         <div className="mt-4 pt-4 border-t border-gray-200 text-sm text-center">
-          <p>&copy; {currentYear} ABC Company. All rights reserved.</p>
+          <p>&copy; {currentYear} Relax Hotel Group. All rights reserved.</p>
         </div>
       </div>
     </footer>

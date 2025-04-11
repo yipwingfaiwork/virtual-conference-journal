@@ -65,7 +65,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-cream p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-terracotta mb-2">ABC Company</h1>
+          <h1 className="text-3xl font-bold text-terracotta mb-2">Relax Hotel Group</h1>
           <p className="text-gray">Virtual Conference Records Management</p>
         </div>
         
