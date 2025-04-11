@@ -71,4 +71,17 @@ export const RecordsAPI = {
   }
 };
 
+// Activity Logs API methods (admin only)
+export const ActivityLogsAPI = {
+  getAll: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/activity-logs', { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching activity logs:', error);
+      throw error;
+    }
+  }
+};
+
 export default apiClient;

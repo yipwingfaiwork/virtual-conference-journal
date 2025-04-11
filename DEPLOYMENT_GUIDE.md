@@ -1,7 +1,7 @@
 
-# Deployment Guide for Relax Hotel Group Application
+# Deployment Guide for Relax Hotel Group Management System
 
-This guide will help you deploy this React application with a Node.js backend on a MAMP server.
+This guide will help you deploy the Relax Hotel Group Management System, a React application with a Node.js backend on a MAMP environment for macOS.
 
 ## Project Structure
 
@@ -15,19 +15,22 @@ relax-hotel-system/
 
 ## Prerequisites
 
-- macOS with MAMP installed
+- macOS with MAMP installed (https://www.mamp.info)
 - MySQL (included with MAMP)
 - Visual Studio Code
-- Node.js and npm
+- Node.js and npm installed
 
 ## Step 1: Database Setup
 
-1. Start MAMP and ensure MySQL is running on port 8889
+1. Start MAMP and ensure MySQL is running on port 8889 (default MAMP MySQL port)
 2. Open phpMyAdmin (usually at http://localhost:8888/phpMyAdmin/)
 3. Import the SQL schema from `backend/db-schema.sql`
-4. This will create the `relax_hotel_system` database with the required tables and sample users:
-   - Admin user: admin@example.com / admin123
-   - Regular user: user@example.com / user123
+4. This will create the `relax_hotel_system` database with the required tables and sample data:
+   - Two sample users:
+     - Admin user: admin@example.com / admin123
+     - Regular user: user@example.com / user123
+   - Sample meeting records
+   - Sample activity logs
 
 ## Step 2: Backend Setup
 
@@ -132,7 +135,7 @@ CREATE TABLE users (
 );
 ```
 
-### Records Table
+### Records Table (Meeting Records)
 ```sql
 CREATE TABLE records (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -146,9 +149,42 @@ CREATE TABLE records (
   outline TEXT,
   createdBy INT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
 );
 ```
+
+### Activity Logs Table
+```sql
+CREATE TABLE activity_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  userId INT,
+  action VARCHAR(255) NOT NULL,
+  details TEXT,
+  recordId INT,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (recordId) REFERENCES records(id) ON DELETE SET NULL
+);
+```
+
+## Feature Overview
+
+The application provides the following features:
+
+### All Users
+- Login and authentication
+- View dashboard with recent records and statistics
+- View, create and update meeting records
+- Search and filter meeting records
+- Profile management and password updates
+
+### Administrators
+- All standard user features
+- Delete meeting records
+- View activity logs of all users
+- User management (coming soon)
+- System settings (coming soon)
 
 ## Troubleshooting
 
