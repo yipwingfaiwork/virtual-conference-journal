@@ -1,153 +1,139 @@
 
-# Deployment Guide for MAMP Server
+# Deployment Guide for Relax Hotel Group Application
 
 This guide will help you deploy this React application with a Node.js backend on a MAMP server.
 
 ## Project Structure
 
-For proper separation of concerns, your project should be organized into two main folders:
+The project is organized into two main folders:
 
 ```
-project-root/
+relax-hotel-system/
 ├── frontend/ (React application)
 └── backend/ (Node.js API server)
 ```
 
-## Step 1: Setting Up the Project Structure
+## Prerequisites
 
-1. Create two directories in your project root:
+- macOS with MAMP installed
+- MySQL (included with MAMP)
+- Visual Studio Code
+- Node.js and npm
 
-```bash
-mkdir -p backend
-# The frontend is your current React application
-```
+## Step 1: Database Setup
 
-2. Move your current React application files to the frontend folder (except for the backend-specific files).
+1. Start MAMP and ensure MySQL is running on port 8889
+2. Open phpMyAdmin (usually at http://localhost:8888/phpMyAdmin/)
+3. Import the SQL schema from `backend/db-schema.sql`
+4. This will create the `relax_hotel_system` database with the required tables and sample users:
+   - Admin user: admin@example.com / admin123
+   - Regular user: user@example.com / user123
 
-## Step 2: Setting Up the Backend
+## Step 2: Backend Setup
 
-Create the following files in your backend folder:
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-### Package.json for Backend
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Create a `package.json` file in the backend folder:
+3. Create a `.env` file with the following content (adjust as needed):
+   ```
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=root
+   DB_NAME=relax_hotel_system
+   DB_PORT=8889
+   PORT=5001
+   JWT_SECRET=relax-hotel-secret-key
+   ```
 
-```bash
-cd backend
-npm init -y
-npm install express mysql2 cors dotenv
-```
+4. Start the backend server:
+   ```bash
+   npm run dev
+   ```
 
-### Server Configuration
+5. The API server will be available at `http://localhost:5001/api`
 
-Create an `.env` file in the backend folder:
+## Step 3: Frontend Setup
 
-```
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=root
-DB_NAME=your_database_name
-DB_PORT=8889
-PORT=5000
-```
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-### Main Server File
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Create a `server.js` file in the backend folder that connects to MySQL and serves API endpoints:
+3. Create a `.env.local` file with:
+   ```
+   VITE_API_URL=http://localhost:5001/api
+   ```
 
-```javascript
-const express = require('express');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const dotenv = require('dotenv');
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-// Load environment variables
-dotenv.config();
+5. The frontend will be available at `http://localhost:5173` or another port provided by Vite
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+## Step 4: Production Deployment
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+### Backend Deployment
 
-// Database connection configuration
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_NAME || 'my_database',
-  port: Number(process.env.DB_PORT) || 8889,
-  connectionLimit: 10,
-};
+1. Build the backend for production:
+   ```bash
+   cd backend
+   npm run build
+   ```
 
-// Create a pool for managing connections
-const pool = mysql.createPool(dbConfig);
+2. Use PM2 or a similar process manager to keep the Node.js server running:
+   ```bash
+   npm install -g pm2
+   pm2 start server.js --name "relax-hotel-api"
+   ```
 
-// Test database connection
-app.get('/api/test-connection', async (req, res) => {
-  try {
-    const connection = await pool.getConnection();
-    console.log('Successfully connected to the database');
-    connection.release();
-    res.json({ message: 'Database connection successful' });
-  } catch (error) {
-    console.error('Failed to connect to the database:', error);
-    res.status(500).json({ error: 'Database connection failed' });
-  }
-});
+### Frontend Deployment
 
-// Example API endpoint for records
-app.get('/api/records', async (req, res) => {
-  try {
-    const [results] = await pool.query('SELECT * FROM records');
-    res.json(results);
-  } catch (error) {
-    console.error('Error fetching records:', error);
-    res.status(500).json({ error: 'Failed to fetch records' });
-  }
-});
+1. Build the React application:
+   ```bash
+   cd frontend
+   npm run build
+   ```
 
-// Add more API endpoints here based on your application needs
+2. Copy the contents of the `dist` folder to your MAMP `htdocs` directory:
+   ```bash
+   cp -R dist/* /Applications/MAMP/htdocs/relax-hotel/
+   ```
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-```
+## Database Schema
 
-## Step 3: Configure the Frontend
+The application uses the following main tables:
 
-Update the API base URL in your frontend to point to your backend server:
-
-1. Create a `.env.local` file in the frontend folder:
-
-```
-VITE_API_URL=http://localhost:5000/api
-```
-
-2. Update the API service to use this environment variable:
-
-```javascript
-// in src/services/api-service.ts
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-```
-
-## Step 4: Database Setup
-
-1. Open phpMyAdmin in MAMP (usually at http://localhost:8888/phpMyAdmin/)
-2. Create a new database for your application
-3. Run the following SQL to create the necessary tables:
-
+### Users Table
 ```sql
-CREATE DATABASE my_database;
-USE my_database;
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  phone VARCHAR(100),
+  address TEXT,
+  department VARCHAR(100),
+  accessLevel INT DEFAULT 1,
+  isAdmin BOOLEAN DEFAULT false,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
+### Records Table
+```sql
 CREATE TABLE records (
   id INT AUTO_INCREMENT PRIMARY KEY,
   date VARCHAR(255) NOT NULL,
@@ -158,82 +144,36 @@ CREATE TABLE records (
   videoLink TEXT,
   textRecord TEXT,
   outline TEXT,
-  createdBy VARCHAR(100),
+  createdBy INT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  phone VARCHAR(100),
-  address TEXT,
-  department VARCHAR(100),
-  accessLevel INT DEFAULT 1,
-  isAdmin BOOLEAN DEFAULT false,
-  password VARCHAR(255) NOT NULL,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert some sample data
-INSERT INTO users (name, email, phone, address, department, accessLevel, isAdmin, password) 
-VALUES ('Admin User', 'admin@example.com', '123-456-7890', '123 Main St', 'Administration', 3, true, 'password123');
 ```
-
-## Step 5: Building and Deploying
-
-### Backend Deployment
-
-1. Start your Node.js backend server:
-
-```bash
-cd backend
-node server.js
-```
-
-2. The backend API will be available at `http://localhost:5000/api`
-
-### Frontend Deployment
-
-1. Build your React application:
-
-```bash
-cd frontend
-npm run build
-```
-
-2. Copy the contents of the `dist` folder to your MAMP `htdocs` directory:
-
-```bash
-cp -R dist/* /Applications/MAMP/htdocs/your-project-folder/
-```
-
-## Step 6: Configure MAMP
-
-1. Start MAMP
-2. Make sure Apache is running on port 8888 (or your preferred port)
-3. Make sure MySQL is running on port 8889 (default MAMP MySQL port)
-4. Access your application at `http://localhost:8888/your-project-folder/`
 
 ## Troubleshooting
 
-1. **CORS errors**: Make sure your backend has CORS enabled and is properly configured to allow requests from your frontend origin.
+1. **MySQL Connection Issues**
+   - Verify MAMP MySQL is running on port 8889
+   - Check database credentials in `.env` file
+   - Test connection with `/api/test-connection` endpoint
 
-2. **Database connection errors**: Verify your MySQL credentials in the `.env` file and ensure MAMP's MySQL server is running.
+2. **Authentication Errors**
+   - Ensure the users table is properly created with sample users
+   - Verify JWT_SECRET is the same in the `.env` file
 
-3. **API endpoint not found**: Check that your API routes match the ones expected by the frontend.
+3. **Frontend API Connection Issues**
+   - Check that VITE_API_URL points to the correct backend URL
+   - Verify the backend server is running
+   - Check for CORS issues in the server configuration
 
-4. **Static file loading issues**: Make sure all paths in your production build are relative, not absolute.
+4. **Port Conflicts**
+   - If port 5001 is already in use, change it in the backend `.env` file
+   - Update the frontend VITE_API_URL to match the new port
 
-## Production Considerations
+## Security Considerations for Production
 
-For a production environment, you would want to:
-
-1. Use environment variables for sensitive information
-2. Implement proper authentication with JWT or session cookies
-3. Set up HTTPS
-4. Use a reverse proxy like Nginx
-5. Implement proper error handling and logging
-
-This guide provides a basic setup for testing and development purposes on MAMP.
+1. Use a proper password hashing mechanism (bcrypt is implemented)
+2. Store JWT secrets securely
+3. Implement HTTPS for all traffic
+4. Add rate limiting to prevent brute force attacks
+5. Regularly update dependencies to patch security vulnerabilities

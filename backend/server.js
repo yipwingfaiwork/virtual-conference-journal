@@ -16,16 +16,16 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 
-// JWT Secret Key
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// JWT Secret Key - should be in env var in production
+const JWT_SECRET = process.env.JWT_SECRET || 'relax-hotel-secret-key';
 
 // Database connection configuration
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_NAME || 'my_database',
-  port: Number(process.env.DB_PORT) || 8889,
+  database: process.env.DB_NAME || 'relax_hotel_system',
+  port: Number(process.env.DB_PORT) || 8889, // MAMP default MySQL port
   connectionLimit: 10,
 };
 
@@ -41,7 +41,7 @@ app.get('/api/test-connection', async (req, res) => {
     res.json({ message: 'Database connection successful' });
   } catch (error) {
     console.error('Failed to connect to the database:', error);
-    res.status(500).json({ error: 'Database connection failed' });
+    res.status(500).json({ error: 'Database connection failed', details: error.message });
   }
 });
 
@@ -50,36 +50,19 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // For demo purposes - in production you would check against database
-    // Hardcoded demo users
-    const demoUsers = [
-      {
-        id: "1",
-        email: "admin@example.com",
-        password: "admin123", // In production, this would be hashed
-        name: "Admin User",
-        phone: "123-456-7890",
-        address: "123 Admin St",
-        department: "Management",
-        accessLevel: 3,
-        isAdmin: true
-      },
-      {
-        id: "2",
-        email: "user@example.com",
-        password: "user123", // In production, this would be hashed
-        name: "Regular User",
-        phone: "098-765-4321",
-        address: "456 User Ave",
-        department: "Operations",
-        accessLevel: 1,
-        isAdmin: false
-      }
-    ];
+    // Get user from database
+    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     
-    const user = demoUsers.find(u => u.email === email);
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
     
-    if (!user || user.password !== password) {
+    const user = users[0];
+    
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     
@@ -100,19 +83,31 @@ app.post('/api/auth/login', async (req, res) => {
     
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
+    res.status(500).json({ error: 'Login failed', details: error.message });
   }
 });
 
 app.post('/api/auth/logout', (req, res) => {
   // In a stateless JWT implementation, the client just removes the token
-  // Server-side we don't need to do anything for simple implementations
   res.json({ message: 'Logged out successfully' });
 });
 
-app.get('/api/auth/me', authenticateToken, (req, res) => {
-  // The user info comes from the decoded token in the authenticateToken middleware
-  res.json(req.user);
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    // Get fresh user data from database
+    const [users] = await pool.query('SELECT id, name, email, phone, address, department, accessLevel, isAdmin FROM users WHERE id = ?', [userId]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(users[0]);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user data', details: error.message });
+  }
 });
 
 // Middleware to authenticate token
@@ -129,41 +124,81 @@ function authenticateToken(req, res, next) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
     
-    // Find the user based on decoded token
-    // For demo purposes - in production you would fetch from database
-    const demoUsers = [
-      {
-        id: "1",
-        email: "admin@example.com",
-        name: "Admin User",
-        phone: "123-456-7890",
-        address: "123 Admin St",
-        department: "Management",
-        accessLevel: 3,
-        isAdmin: true
-      },
-      {
-        id: "2",
-        email: "user@example.com",
-        name: "Regular User",
-        phone: "098-765-4321",
-        address: "456 User Ave",
-        department: "Operations",
-        accessLevel: 1,
-        isAdmin: false
-      }
-    ];
-    
-    const user = demoUsers.find(u => u.id === decoded.userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    req.user = user;
+    req.user = decoded;
     next();
   });
 }
+
+// Users API endpoints
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { name, email, phone, address, department } = req.body;
+    
+    // Check if user exists
+    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Update user
+    await pool.query(
+      'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, department = ? WHERE id = ?',
+      [name, email, phone, address, department, userId]
+    );
+    
+    // Get updated user
+    const [updatedUsers] = await pool.query(
+      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin FROM users WHERE id = ?', 
+      [userId]
+    );
+    
+    res.json(updatedUsers[0]);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user', details: error.message });
+  }
+});
+
+app.post('/api/users/:id/change-password', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { oldPassword, newPassword } = req.body;
+    
+    // Validate user id from token matches requested id
+    if (req.user.userId != userId && !req.user.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    // Get user with password
+    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = users[0];
+    
+    // Verify old password
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+    
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ error: 'Failed to change password', details: error.message });
+  }
+});
 
 // Records API endpoints
 app.get('/api/records', async (req, res) => {
