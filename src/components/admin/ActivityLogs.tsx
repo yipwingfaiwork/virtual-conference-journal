@@ -75,7 +75,7 @@ const ActivityLogs = () => {
         ? aVal.localeCompare(bVal)
         : bVal.localeCompare(aVal);
     }
-  });
+  };
 
   const getActionBadgeVariant = (action: string) => {
     switch (true) {
