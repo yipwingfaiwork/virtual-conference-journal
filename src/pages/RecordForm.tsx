@@ -1,23 +1,16 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Clock, Building, Users, Video, FileText, AlignLeft, Save, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { canUserModifyRecord, getCurrentUser } from '@/lib/auth';
 import { ConferenceRecord, User } from '@/lib/types';
 import { useRecord, useRecords } from '@/hooks/use-records';
+import BasicInformationForm from '@/components/forms/BasicInformationForm';
+import OutlineForm from '@/components/forms/OutlineForm';
+import TextRecordForm from '@/components/forms/TextRecordForm';
+import FormActions from '@/components/forms/FormActions';
 
 const RecordForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -155,7 +148,6 @@ const RecordForm = () => {
   };
 
   return (
-    
     <div className="p-4 sm:p-6 md:p-8">
       <div className="mb-6">
         <Button 
@@ -174,187 +166,32 @@ const RecordForm = () => {
       
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-medium">Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">
-                  Title <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <FileText className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="title"
-                    name="title"
-                    placeholder="Meeting title"
-                    className="pl-8"
-                    value={record.title}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="date">
-                  Date <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="date"
-                    name="date"
-                    type="date"
-                    className="pl-8"
-                    value={record.date}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="department">
-                  Department <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <Building className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Select 
-                    name="department"
-                    value={record.department} 
-                    onValueChange={(value) => handleSelectChange('department', value)}
-                  >
-                    <SelectTrigger id="department" className="pl-8">
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Operations">Operations</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                      <SelectItem value="Management">Management</SelectItem>
-                      <SelectItem value="Administration">Administration</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="duration">
-                  Duration <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="duration"
-                    name="duration"
-                    placeholder="e.g., 1 hour, 30 minutes"
-                    className="pl-8"
-                    value={record.duration}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="participants">
-                  Participants <span className="text-muted-foreground text-sm">(comma separated)</span>
-                </Label>
-                <div className="relative">
-                  <Users className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="participants"
-                    name="participants"
-                    placeholder="John Doe, Jane Smith"
-                    className="pl-8"
-                    value={participantsInput}
-                    onChange={handleParticipantsChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="videoLink">Video Link</Label>
-                <div className="relative">
-                  <Video className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="videoLink"
-                    name="videoLink"
-                    placeholder="https://example.com/video"
-                    className="pl-8"
-                    value={record.videoLink}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <BasicInformationForm
+            record={record}
+            handleChange={handleChange}
+            handleSelectChange={handleSelectChange}
+            handleParticipantsChange={handleParticipantsChange}
+            participantsInput={participantsInput}
+          />
           
           <div className="space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-medium">Meeting Outline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <AlignLeft className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <Label htmlFor="outline">Outline (one item per line)</Label>
-                  </div>
-                  <Textarea
-                    id="outline"
-                    name="outline"
-                    placeholder="1. Introduction&#10;2. Agenda Review&#10;3. Discussion Points"
-                    rows={5}
-                    value={record.outline}
-                    onChange={handleChange}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <OutlineForm 
+              outline={record.outline || ''} 
+              handleChange={handleChange} 
+            />
             
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-medium">Text Record</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <Label htmlFor="textRecord">Meeting Notes</Label>
-                  </div>
-                  <Textarea
-                    id="textRecord"
-                    name="textRecord"
-                    placeholder="Enter the text record or meeting minutes here..."
-                    rows={10}
-                    value={record.textRecord}
-                    onChange={handleChange}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <TextRecordForm 
+              textRecord={record.textRecord || ''} 
+              handleChange={handleChange} 
+            />
           </div>
         </div>
         
-        <div className="flex justify-end space-x-4">
-          <Button 
-            variant="outline" 
-            type="button"
-            onClick={() => navigate('/records')}
-          >
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            className="bg-terracotta hover:bg-terracotta/90"
-            disabled={isSubmitting}
-          >
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create Record' : 'Update Record'}
-          </Button>
-        </div>
+        <FormActions 
+          isSubmitting={isSubmitting} 
+          mode={mode} 
+          onCancel={() => navigate('/records')} 
+        />
       </form>
     </div>
   );

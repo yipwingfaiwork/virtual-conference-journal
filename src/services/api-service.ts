@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 // Create an axios instance with base configuration
@@ -84,12 +83,14 @@ export const ActivityLogsAPI = {
   }
 };
 
-// Fixing the build error in ActivityLogs.tsx by adding the necessary types to the badge variants
+// Define badge variants to match the ones from src/components/ui/badge.tsx
 export const badgeVariants = {
   default: "default",
   secondary: "secondary",
   destructive: "destructive",
-  outline: "outline"
+  outline: "outline",
+  success: "default",  // Map success to default since it's not in the original variants
+  warning: "secondary" // Map warning to secondary since it's not in the original variants
 };
 
 export default apiClient;

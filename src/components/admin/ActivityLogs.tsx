@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Calendar, User, Activity, FileText, Eye, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import {
   TableHeader, 
   TableRow,
 } from "@/components/ui/table";
-import { ActivityLogsAPI } from '@/services/api-service';
+import { ActivityLogsAPI, badgeVariants } from '@/services/api-service';
 
 interface ActivityLog {
   id: string;
@@ -81,18 +80,18 @@ const ActivityLogs = () => {
   const getActionBadgeVariant = (action: string) => {
     switch (true) {
       case action.includes('CREATE'):
-        return 'success';
+        return badgeVariants.success;
       case action.includes('UPDATE'):
-        return 'warning';
+        return badgeVariants.warning;
       case action.includes('DELETE'):
-        return 'destructive';
+        return badgeVariants.destructive;
       case action.includes('VIEW'):
-        return 'secondary';
+        return badgeVariants.secondary;
       case action.includes('LOGIN'):
       case action.includes('LOGOUT'):
-        return 'default';
+        return badgeVariants.default;
       default:
-        return 'outline';
+        return badgeVariants.outline;
     }
   };
 
