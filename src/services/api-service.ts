@@ -84,4 +84,12 @@ export const ActivityLogsAPI = {
   }
 };
 
+// Fixing the build error in ActivityLogs.tsx by adding the necessary types to the badge variants
+export const badgeVariants = {
+  default: "default",
+  secondary: "secondary",
+  destructive: "destructive",
+  outline: "outline"
+};
+
 export default apiClient;
