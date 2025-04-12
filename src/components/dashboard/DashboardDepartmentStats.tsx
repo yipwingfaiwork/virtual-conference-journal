@@ -1,6 +1,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ConferenceRecord } from '@/lib/types';
+import { Badge } from "@/components/ui/badge";
 
 interface DepartmentStatsProps {
   isLoading: boolean;
@@ -33,9 +34,9 @@ const DashboardDepartmentStats = ({ isLoading, error, records }: DepartmentStats
             departmentStats.map(dept => (
               <div key={dept.name} className="flex justify-between items-center">
                 <span>{dept.name}</span>
-                <span className="text-sm font-medium bg-teal/10 text-teal px-2 py-0.5 rounded-full">
+                <Badge variant="success">
                   {dept.count} records
-                </span>
+                </Badge>
               </div>
             ))
           )}

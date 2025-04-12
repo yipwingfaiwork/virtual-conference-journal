@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { 
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { ConferenceRecord } from '@/lib/types';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardRecentRecordsProps {
   records: ConferenceRecord[] | undefined;
@@ -38,7 +38,11 @@ const DashboardRecentRecords = ({ records, isLoading, error }: DashboardRecentRe
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-center py-8">Loading records...</p>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         ) : error ? (
           <p className="text-center text-destructive py-8">Error loading records</p>
         ) : (
@@ -53,7 +57,7 @@ const DashboardRecentRecords = ({ records, isLoading, error }: DashboardRecentRe
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentRecords.length > 0 ? (
+              {recentRecords && recentRecords.length > 0 ? (
                 recentRecords.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">
