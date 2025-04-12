@@ -89,7 +89,9 @@ export const badgeVariants = {
   default: "default",
   secondary: "secondary",
   destructive: "destructive",
-  outline: "outline"
+  outline: "outline",
+  success: "success",
+  warning: "warning"
 } as const;
 
 export default apiClient;

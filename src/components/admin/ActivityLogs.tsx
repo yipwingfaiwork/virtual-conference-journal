@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Calendar, User, Activity, FileText, Eye, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -75,7 +76,7 @@ const ActivityLogs = () => {
         ? aVal.localeCompare(bVal)
         : bVal.localeCompare(aVal);
     }
-  };
+  });
 
   const getActionBadgeVariant = (action: string) => {
     switch (true) {
