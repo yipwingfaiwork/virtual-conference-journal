@@ -44,6 +44,8 @@ const DashboardChart = () => {
       <CardHeader>
         <CardTitle>Conference Analytics</CardTitle>
         <CardDescription>Visual analysis of conference data</CardDescription>
+      </CardHeader>
+      <CardContent>
         <Tabs 
           value={chartType} 
           onValueChange={(value) => setChartType(value as 'trends' | 'departments' | 'participation')}
@@ -54,76 +56,75 @@ const DashboardChart = () => {
             <TabsTrigger value="departments">Department Distribution</TabsTrigger>
             <TabsTrigger value="participation">Participation Metrics</TabsTrigger>
           </TabsList>
-        </Tabs>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
-          <TabsContent value="trends" className="h-full mt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={monthlyData}
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="colorConferences" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#f97316" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
-                <Tooltip />
-                <Area 
-                  type="monotone" 
-                  dataKey="conferences" 
-                  stroke="#f97316" 
-                  fillOpacity={1} 
-                  fill="url(#colorConferences)" 
-                  name="Conferences"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          <TabsContent value="departments" className="h-full mt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={departmentData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+          
+          <div className="h-[300px]">
+            <TabsContent value="trends" className="h-full mt-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={monthlyData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                 >
-                  {departmentData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Legend layout="horizontal" verticalAlign="bottom" align="center" />
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          <TabsContent value="participation" className="h-full mt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={monthlyData}
-                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="participants" name="Participants" fill="#8b5cf6" />
-                <Bar dataKey="duration" name="Duration (hours)" fill="#0ea5e9" />
-              </BarChart>
-            </ResponsiveContainer>
-          </TabsContent>
-        </div>
+                  <defs>
+                    <linearGradient id="colorConferences" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip />
+                  <Area 
+                    type="monotone" 
+                    dataKey="conferences" 
+                    stroke="#f97316" 
+                    fillOpacity={1} 
+                    fill="url(#colorConferences)" 
+                    name="Conferences"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </TabsContent>
+            <TabsContent value="departments" className="h-full mt-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={departmentData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {departmentData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </TabsContent>
+            <TabsContent value="participation" className="h-full mt-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={monthlyData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="participants" name="Participants" fill="#8b5cf6" />
+                  <Bar dataKey="duration" name="Duration (hours)" fill="#0ea5e9" />
+                </BarChart>
+              </ResponsiveContainer>
+            </TabsContent>
+          </div>
+        </Tabs>
       </CardContent>
     </Card>
   );
