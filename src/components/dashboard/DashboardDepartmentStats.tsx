@@ -9,9 +9,9 @@ interface DepartmentStatsProps {
   records: ConferenceRecord[] | undefined;
 }
 
-const DashboardDepartmentStats = ({ isLoading, error, records }: DepartmentStatsProps) => {
+const DashboardDepartmentStats = ({ isLoading, error, records = [] }: DepartmentStatsProps) => {
   // Get department stats
-  const departmentStats = records 
+  const departmentStats = records && Array.isArray(records)
     ? ['Operations', 'Finance', 'Management', 'Administration'].map(dept => ({
         name: dept,
         count: records.filter(record => record.department === dept).length
@@ -30,7 +30,7 @@ const DashboardDepartmentStats = ({ isLoading, error, records }: DepartmentStats
             <p className="text-muted-foreground">Loading stats...</p>
           ) : error ? (
             <p className="text-destructive">Error loading stats</p>
-          ) : (
+          ) : departmentStats.length > 0 ? (
             departmentStats.map(dept => (
               <div key={dept.name} className="flex justify-between items-center">
                 <span>{dept.name}</span>
@@ -39,6 +39,8 @@ const DashboardDepartmentStats = ({ isLoading, error, records }: DepartmentStats
                 </Badge>
               </div>
             ))
+          ) : (
+            <p className="text-muted-foreground">No department data available</p>
           )}
         </div>
       </CardContent>
