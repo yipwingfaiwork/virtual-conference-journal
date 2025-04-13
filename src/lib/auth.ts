@@ -12,21 +12,21 @@ export { getCachedUser };
 export const isAuthenticated = AuthService.isAuthenticated;
 
 // Add missing functions that are referenced in other components
-export const canUserModifyRecord = (currentUser: User | string, recordCreatorId: string): boolean => {
+export const canUserModifyRecord = (currentUser: User | null | string, recordCreatorId: string): boolean => {
   // Admin users can modify any record
-  if (typeof currentUser === 'object' && currentUser.isAdmin) {
+  if (typeof currentUser === 'object' && currentUser?.isAdmin) {
     return true;
   }
   
   // Users can only modify their own records
-  const userId = typeof currentUser === 'object' ? currentUser.id : currentUser;
+  const userId = typeof currentUser === 'object' ? currentUser?.id : currentUser;
   return userId === recordCreatorId;
 };
 
-export const canUserDeleteRecord = (currentUser: User | string): boolean => {
+export const canUserDeleteRecord = (currentUser: User | null | string): boolean => {
   // Only admin users can delete records
-  if (typeof currentUser === 'object') {
-    return currentUser.isAdmin;
+  if (typeof currentUser === 'object' && currentUser) {
+    return !!currentUser.isAdmin;
   }
   return false;
 };
