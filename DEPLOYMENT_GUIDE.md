@@ -1,7 +1,7 @@
 
 # Deployment Guide for Relax Hotel Group Management System
 
-This guide will help you deploy the Relax Hotel Group Management System, a React application with a Node.js backend on a MAMP environment for macOS.
+This guide will help you deploy the Relax Hotel Group Management System, a React application with a Node.js backend on Microsoft Azure.
 
 ## Project Structure
 
@@ -15,25 +15,32 @@ relax-hotel-system/
 
 ## Prerequisites
 
-- macOS with MAMP installed (https://www.mamp.info)
-- MySQL (included with MAMP)
-- Visual Studio Code
+- Microsoft Azure account with active subscription
+- Azure CLI installed
 - Node.js and npm installed
+- Git installed
 
 ## Step 1: Database Setup
 
-1. Start MAMP and ensure MySQL is running on port 8889 (default MAMP MySQL port)
-2. Open phpMyAdmin (usually at http://localhost:8888/phpMyAdmin/)
-3. Import the SQL schema from `backend/db-schema.sql`
-4. This will create the `relax_hotel_system` database with the required tables and sample data:
-   - Two sample users:
-     - Admin user: admin@example.com / admin123
-     - Regular user: user@example.com / user123
-   - Sample meeting records
-   - Sample activity logs
+1. Create an Azure MySQL Database:
+   - Log in to the Azure Portal (https://portal.azure.com)
+   - Create a new Azure Database for MySQL flexible server
+   - Create a new database named `relax_hotel_system`
+   - Configure firewall rules to allow your development machine and Azure services
+
+2. Import the SQL schema:
+   - Use the Azure Cloud Shell or MySQL Workbench to connect to your database
+   - Import the SQL schema from `backend/db-schema.sql`
+   - This will create the required tables and sample data:
+     - Two sample users:
+       - Admin user: admin@example.com / admin123
+       - Regular user: user@example.com / user123
+     - Sample meeting records
+     - Sample activity logs
 
 ## Step 2: Backend Setup
 
+### Local Development
 1. Navigate to the backend directory:
    ```bash
    cd backend
@@ -44,26 +51,37 @@ relax-hotel-system/
    npm install
    ```
 
-3. Create a `.env` file with the following content (adjust as needed):
+3. Create a `.env` file with the following content:
    ```
-   DB_HOST=localhost
-   DB_USER=root
-   DB_PASSWORD=root
+   DB_HOST=your-azure-mysql-server.mysql.database.azure.com
+   DB_USER=your_username
+   DB_PASSWORD=your_password
    DB_NAME=relax_hotel_system
-   DB_PORT=8889
+   DB_PORT=3306
    PORT=5001
    JWT_SECRET=relax-hotel-secret-key
    ```
 
-4. Start the backend server:
+4. Start the development server:
    ```bash
    npm run dev
    ```
 
-5. The API server will be available at `http://localhost:5001/api`
+### Azure Deployment
+1. Create an Azure Web App for the backend:
+   - Log in to the Azure Portal
+   - Create a new Web App with Node.js runtime
+   - Set up deployment from GitHub using the GitHub Actions workflow
+
+2. Configure environment variables in the Azure Web App:
+   - Go to your Web App > Configuration > Application settings
+   - Add all the environment variables from your .env file
+
+3. GitHub Actions deployment is already configured in `.github/workflows/main_n8n-api.yml`
 
 ## Step 3: Frontend Setup
 
+### Local Development
 1. Navigate to the frontend directory:
    ```bash
    cd frontend
@@ -77,6 +95,7 @@ relax-hotel-system/
 3. Create a `.env.local` file with:
    ```
    VITE_API_URL=http://localhost:5001/api
+   # For production: VITE_API_URL=https://your-backend-webapp.azurewebsites.net/api
    ```
 
 4. Start the development server:
@@ -84,36 +103,17 @@ relax-hotel-system/
    npm run dev
    ```
 
-5. The frontend will be available at `http://localhost:5173` or another port provided by Vite
+### Azure Deployment
+1. For frontend deployment, we're using Azure Static Web Apps:
+   - Already configured in `.github/workflows/azure-static-web-apps-green-tree-031871e03.yml`
+   - This automatically builds and deploys your React app to Azure Static Web Apps
 
-## Step 4: Production Deployment
-
-### Backend Deployment
-
-1. Build the backend for production:
-   ```bash
-   cd backend
-   npm run build
-   ```
-
-2. Use PM2 or a similar process manager to keep the Node.js server running:
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name "relax-hotel-api"
-   ```
-
-### Frontend Deployment
-
-1. Build the React application:
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-2. Copy the contents of the `dist` folder to your MAMP `htdocs` directory:
-   ```bash
-   cp -R dist/* /Applications/MAMP/htdocs/relax-hotel/
-   ```
+2. Configure environment variables:
+   - Go to your Static Web App > Configuration
+   - Add the production API URL environment variable:
+     ```
+     VITE_API_URL=https://your-backend-webapp.azurewebsites.net/api
+     ```
 
 ## Database Schema
 
@@ -186,30 +186,36 @@ The application provides the following features:
 - User management (coming soon)
 - System settings (coming soon)
 
-## Troubleshooting
+## Troubleshooting Azure Deployments
 
-1. **MySQL Connection Issues**
-   - Verify MAMP MySQL is running on port 8889
-   - Check database credentials in `.env` file
-   - Test connection with `/api/test-connection` endpoint
+1. **Backend Deployment Issues:**
+   - Check Application Logs in the Azure Portal
+   - Review GitHub Actions workflow runs for any failures
+   - Verify all environment variables are properly configured
+   - Check Application Insights for runtime errors
 
-2. **Authentication Errors**
-   - Ensure the users table is properly created with sample users
-   - Verify JWT_SECRET is the same in the `.env` file
+2. **Frontend Deployment Issues:**
+   - Check the GitHub Actions workflow run status
+   - Verify that build output configuration matches the static web app settings
+   - Check browser console for CORS or API connection issues
 
-3. **Frontend API Connection Issues**
-   - Check that VITE_API_URL points to the correct backend URL
-   - Verify the backend server is running
-   - Check for CORS issues in the server configuration
+3. **Database Connection Issues:**
+   - Verify firewall rules allow connections from Azure services
+   - Check connection string parameters in application settings
+   - Test connection with a database client
 
-4. **Port Conflicts**
-   - If port 5001 is already in use, change it in the backend `.env` file
-   - Update the frontend VITE_API_URL to match the new port
+4. **CORS Issues:**
+   - Ensure the backend server has CORS configured to allow requests from the frontend domain
+   - Update CORS configuration in the backend middleware
+
+5. **Authentication Issues:**
+   - Ensure JWT_SECRET is properly configured
+   - Verify tokens are being properly sent and verified
 
 ## Security Considerations for Production
 
-1. Use a proper password hashing mechanism (bcrypt is implemented)
-2. Store JWT secrets securely
-3. Implement HTTPS for all traffic
-4. Add rate limiting to prevent brute force attacks
-5. Regularly update dependencies to patch security vulnerabilities
+1. Use Azure Key Vault to store sensitive credentials and secrets
+2. Implement Azure Active Directory authentication for added security
+3. Use HTTPS for all traffic (provided by default with Azure Web Apps)
+4. Set up Azure Web Application Firewall policies
+5. Configure regular database backups
