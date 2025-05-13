@@ -7,11 +7,11 @@ dotenv.config();
 
 // Database connection configuration
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root',
+  host: process.env.DB_HOST || 'hoteldb.mysql.database.azure.com',
+  user: process.env.DB_USER || 'dba',
+  password: process.env.DB_PASSWORD || 'Lezykgu1',
   database: process.env.DB_NAME || 'relax_hotel_system',
-  port: Number(process.env.DB_PORT) || 8889, // MAMP default MySQL port
+  port: Number(process.env.DB_PORT) || 3306, // 8889 MAMP default MySQL port
   connectionLimit: 10,
 };
 
