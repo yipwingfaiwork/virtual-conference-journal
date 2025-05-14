@@ -107,6 +107,7 @@ relax-hotel-system/
 1. For frontend deployment, we're using Azure Static Web Apps:
    - Already configured in `.github/workflows/azure-static-web-apps-green-tree-031871e03.yml`
    - This automatically builds and deploys your React app to Azure Static Web Apps
+   - **Important**: We use Vite's default output directory `dist`, not `build` as configured in the workflow file
 
 2. Configure environment variables:
    - Go to your Static Web App > Configuration
@@ -114,6 +115,13 @@ relax-hotel-system/
      ```
      VITE_API_URL=https://your-backend-webapp.azurewebsites.net/api
      ```
+
+## Build and Output Configuration
+
+For Vite-based applications:
+- The default build output directory is `dist`
+- Make sure the Azure Static Web App workflow's `output_location` is set to `dist`
+- The build command is `npm run build` which runs Vite's build process
 
 ## Database Schema
 
@@ -196,8 +204,9 @@ The application provides the following features:
 
 2. **Frontend Deployment Issues:**
    - Check the GitHub Actions workflow run status
-   - Verify that build output configuration matches the static web app settings
+   - Verify that the `output_location` in the workflow file is set to `dist` (Vite's default)
    - Check browser console for CORS or API connection issues
+   - Review build logs in GitHub Actions for any compilation errors
 
 3. **Database Connection Issues:**
    - Verify firewall rules allow connections from Azure services

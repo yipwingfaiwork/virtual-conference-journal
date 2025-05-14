@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   base: './', // Use relative paths
+  build: {
+    outDir: 'dist', // Explicitly set output directory to 'dist'
+    emptyOutDir: true,
+  },
   plugins: [
     react(),
     mode === 'development' &&
