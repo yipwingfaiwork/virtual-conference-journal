@@ -9,7 +9,7 @@ The project is organized into two main folders:
 
 ```
 relax-hotel-system/
-├── frontend/ (React application)
+├── frontend/ (React application built with Vite)
 └── backend/ (Node.js API server)
 ```
 
@@ -77,7 +77,11 @@ relax-hotel-system/
    - Go to your Web App > Configuration > Application settings
    - Add all the environment variables from your .env file
 
-3. GitHub Actions deployment is already configured in `.github/workflows/main_n8n-api.yml`
+3. GitHub Actions deployment is configured in `.github/workflows/main_n8n-api.yml`
+   - Make sure the correct Azure credentials are configured in GitHub repository secrets:
+     - `AZUREAPPSERVICE_CLIENTID_EC26A69020B34E23941C2C5CEA7C131D`
+     - `AZUREAPPSERVICE_TENANTID_688ED3F6659A452F8CCA8F4F7A22260D`
+     - `AZUREAPPSERVICE_SUBSCRIPTIONID_E31BC13E1922418DAA472D43596C6654`
 
 ## Step 3: Frontend Setup
 
@@ -105,9 +109,9 @@ relax-hotel-system/
 
 ### Azure Deployment
 1. For frontend deployment, we're using Azure Static Web Apps:
-   - Already configured in `.github/workflows/azure-static-web-apps-green-tree-031871e03.yml`
+   - Configured in `.github/workflows/azure-static-web-apps-lemon-moss-03941a703.yml`
    - This automatically builds and deploys your React app to Azure Static Web Apps
-   - **Important**: We use Vite's default output directory `dist`, not `build` as configured in the workflow file
+   - **Important**: This project uses Vite which outputs to the `dist` directory, not `build`
 
 2. Configure environment variables:
    - Go to your Static Web App > Configuration
@@ -120,7 +124,7 @@ relax-hotel-system/
 
 For Vite-based applications:
 - The default build output directory is `dist`
-- Make sure the Azure Static Web App workflow's `output_location` is set to `dist`
+- The Azure Static Web App workflow should have `output_location` set to `dist`
 - The build command is `npm run build` which runs Vite's build process
 
 ## Database Schema
@@ -201,6 +205,8 @@ The application provides the following features:
    - Review GitHub Actions workflow runs for any failures
    - Verify all environment variables are properly configured
    - Check Application Insights for runtime errors
+   - Ensure Azure service principal credentials in GitHub secrets are correct
+   - Verify the tenant ID is correct and exists in your Azure subscription
 
 2. **Frontend Deployment Issues:**
    - Check the GitHub Actions workflow run status
