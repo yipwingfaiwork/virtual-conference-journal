@@ -49,7 +49,7 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the  JWT
+      #testing new auth id-token: write #This is required for requesting the  JWT
       contents: read #This is required for actions/checkout
 
     steps:
@@ -66,9 +66,9 @@ jobs:
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_EC26A69020B34E23941C2C5CEA7C131D }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_688ED3F6659A452F8CCA8F4F7A22260D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_9B7189B5E3ED4FA4856C715A1C429B45 }}
-          # OLD SETTING BACKUP subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E31BC13E1922418DAA472D43596C6654 }}
-          # auth-type: IDENTITY
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E31BC13E1922418DAA472D43596C6654 }}
+          client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}
+          auth-type: SERVICE_PRINCIPAL
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
