@@ -18,9 +18,13 @@ const express = require('express');
 
 const setupMiddleware = (app) => {
   app.use(cors({
-    origin: 'https://lemon-moss-03941a703.azurestaticapps.net',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: [
+      'https://lemon-moss-03941a703.azurestaticapps.net',
+      'https://lemon-moss-03941a703.6.azurestaticapps.net'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false
   }));
   app.use(express.json());
 };
