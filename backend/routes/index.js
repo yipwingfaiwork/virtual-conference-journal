@@ -7,6 +7,11 @@ const db = require('../config/db');
 
 // Setup API routes
 const setupRoutes = (app) => {
+  // Test database connection 16/5/2025 Fai
+  app.get('/api', (req, res) => {
+    res.json({ message: 'API is running' });
+  });
+
   // Test database connection endpoint
   app.get('/api/test-connection', async (req, res) => {
     try {

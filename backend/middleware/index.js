@@ -1,11 +1,27 @@
 
+//const cors = require('cors');
+//const express = require('express');
+
+//// Configure and export middleware
+//const setupMiddleware = (app) => {
+////  // Apply middleware
+//  app.use(cors());
+//  app.use(express.json());
+//};
+
+//module.exports = setupMiddleware;
+
+
+//16/5/25 Fai update
 const cors = require('cors');
 const express = require('express');
 
-// Configure and export middleware
 const setupMiddleware = (app) => {
-  // Apply middleware
-  app.use(cors());
+  app.use(cors({
+    origin: 'https://lemon-moss-03941a703.azurestaticapps.net',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
   app.use(express.json());
 };
 
