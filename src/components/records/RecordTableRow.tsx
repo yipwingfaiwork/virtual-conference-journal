@@ -1,5 +1,5 @@
 
-import { Calendar, Clock, User, FileText, Video } from 'lucide-react';
+import { Calendar, Clock, User, FileText, Video, Import, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConferenceRecord } from '@/lib/types';
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from '@/components/ui/badge';
 
 interface RecordTableRowProps {
   record: ConferenceRecord;
@@ -79,6 +80,12 @@ const RecordTableRow = ({ record, getCreatorName }: RecordTableRowProps) => {
                   <h3 className="text-sm font-medium mb-1">Participants</h3>
                   <p className="text-sm">{record.participants.join(', ')}</p>
                 </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Import from AI</h3>
+                  <Badge variant={record.importFromAI ? "default" : "outline"}>
+                    {record.importFromAI ? 'Yes' : 'No'}
+                  </Badge>
+                </div>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-medium mb-1">Meeting Outline</h3>
@@ -89,6 +96,15 @@ const RecordTableRow = ({ record, getCreatorName }: RecordTableRowProps) => {
                   <h3 className="text-sm font-medium mb-1">Text Record Preview</h3>
                   <p className="text-sm line-clamp-4">{record.textRecord}</p>
                 </div>
+                {record.remark && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Remarks</h3>
+                      <p className="text-sm">{record.remark}</p>
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => navigate(`/records/${record.id}`)}>
