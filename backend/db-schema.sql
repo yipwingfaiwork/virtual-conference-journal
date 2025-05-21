@@ -52,8 +52,8 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 -- Insert some sample users (password hashed using bcrypt in production)
 INSERT INTO users (name, email, password, phone, address, department, accessLevel, isAdmin)
 VALUES 
-('Admin User', 'admin@example.com', '$2b$10$OQ8jPvmBDvlRwrJEX0NO/uKaPErtZZMvZEz8TRF.fXp/v4wV5TMY.', '123-456-7890', '123 Admin St', 'Management', 3, true),
-('Regular User', 'user@example.com', '$2b$10$AzPS3uOqLy7IYgNeiAmOneJm65IG5QUhCFDcTzSQDYKVoACKGVnym', '098-765-4321', '456 User Ave', 'Operations', 1, false);
+('Admin User', 'admin@example.com', '$2a$12$z/CvZZ/SHPf6ZALonwPjpua.VjMIk9FWUzovb5hUc2UvjkvDKZggy', '123-456-7890', '123 Admin St', 'Management', 3, true),
+('Regular User', 'user@example.com', '$2a$12$5uVEtMdPRZJnHYYJHP4gmuhqKrEuVlCn/8GlvrgbJNZrUGh3WPPnO', '098-765-4321', '456 User Ave', 'Operations', 1, false);
 -- Passwords are: admin123 and user123
 
 -- Insert some sample records
