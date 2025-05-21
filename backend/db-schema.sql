@@ -26,9 +26,11 @@ CREATE TABLE IF NOT EXISTS records (
   department VARCHAR(100) NOT NULL,
   title VARCHAR(255) NOT NULL,
   participants JSON,
+  importFromAI BOOLEAN DEFAULT false,
   videoLink TEXT,
   textRecord TEXT,
   outline TEXT,
+  remark TEXT,
   createdBy INT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -55,10 +57,10 @@ VALUES
 -- Passwords are: admin123 and user123
 
 -- Insert some sample records
-INSERT INTO records (date, duration, department, title, participants, videoLink, textRecord, outline, createdBy) VALUES
-('2023-11-15', '1 hour', 'Operations', 'Monthly Planning Meeting', '["John Smith", "Jane Doe", "Robert Johnson"]', 'https://example.com/video1', 'This meeting focused on planning for the upcoming month. We discussed resource allocation and project timelines.', '1. Introduction\n2. Resource Planning\n3. Project Timelines\n4. Q&A', 1),
-('2023-11-20', '45 minutes', 'Finance', 'Budget Review', '["Alice Brown", "Bob Miller"]', 'https://example.com/video2', 'We reviewed the quarterly budget and approved expenditures for the next quarter.', '1. Budget Overview\n2. Expense Reports\n3. Approval Process', 2),
-('2023-11-25', '2 hours', 'Management', 'Strategy Session', '["Admin User", "Jane Doe", "Sam Wilson"]', 'https://example.com/video3', 'Long-term strategy discussion for hotel expansion plans. We identified key markets and potential acquisition targets.', '1. Market Analysis\n2. Expansion Plan\n3. Timeline\n4. Resource Requirements', 1);
+INSERT INTO records (date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark, createdBy) VALUES
+('2023-11-15T14:00', '1 hour', 'Operations', 'Monthly Planning Meeting', '["John Smith", "Jane Doe", "Robert Johnson"]', false, 'https://example.com/video1', 'This meeting focused on planning for the upcoming month. We discussed resource allocation and project timelines.', '1. Introduction\n2. Resource Planning\n3. Project Timelines\n4. Q&A', 'Need to follow up with finance department', 1),
+('2023-11-20T10:30', '45 minutes', 'Finance', 'Budget Review', '["Alice Brown", "Bob Miller"]', true, 'https://example.com/video2', 'We reviewed the quarterly budget and approved expenditures for the next quarter.', '1. Budget Overview\n2. Expense Reports\n3. Approval Process', 'All attendees approved the budget', 2),
+('2023-11-25T13:00', '2 hours', 'Management', 'Strategy Session', '["Admin User", "Jane Doe", "Sam Wilson"]', false, 'https://example.com/video3', 'Long-term strategy discussion for hotel expansion plans. We identified key markets and potential acquisition targets.', '1. Market Analysis\n2. Expansion Plan\n3. Timeline\n4. Resource Requirements', 'Action items assigned to department heads', 1);
 
 -- Insert some sample activity logs
 INSERT INTO activity_logs (userId, action, details, recordId) VALUES

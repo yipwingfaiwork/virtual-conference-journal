@@ -17,9 +17,11 @@ export interface ConferenceRecord {
   department: string;
   title: string;
   participants: string[];
+  importFromAI: boolean;
   videoLink: string;
   textRecord: string;
   outline: string;
+  remark: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

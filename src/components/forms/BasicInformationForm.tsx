@@ -1,5 +1,5 @@
 
-import { Calendar, Clock, Building, Users, Video, FileText } from 'lucide-react';
+import { Calendar, Clock, Building, Users, Video, FileText, MessageSquare } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ConferenceRecord } from '@/lib/types';
 
 interface BasicInformationFormProps {
@@ -17,6 +18,7 @@ interface BasicInformationFormProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
   handleParticipantsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRadioChange: (name: string, value: string) => void;
   participantsInput: string;
 }
 
@@ -25,6 +27,7 @@ const BasicInformationForm = ({
   handleChange,
   handleSelectChange,
   handleParticipantsChange,
+  handleRadioChange,
   participantsInput
 }: BasicInformationFormProps) => {
   return (
@@ -53,14 +56,14 @@ const BasicInformationForm = ({
         
         <div className="space-y-2">
           <Label htmlFor="date">
-            Date <span className="text-destructive">*</span>
+            Date and Time <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               id="date"
               name="date"
-              type="date"
+              type="datetime-local"
               className="pl-8"
               value={record.date}
               onChange={handleChange}
@@ -129,6 +132,25 @@ const BasicInformationForm = ({
         </div>
         
         <div className="space-y-2">
+          <Label htmlFor="importFromAI">Import from AI generated</Label>
+          <RadioGroup 
+            id="importFromAI" 
+            className="flex flex-row space-x-4"
+            value={record.importFromAI ? "yes" : "no"}
+            onValueChange={(value) => handleRadioChange('importFromAI', value)}
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="yes" id="ai-yes" />
+              <Label htmlFor="ai-yes">Yes</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="no" id="ai-no" />
+              <Label htmlFor="ai-no">No</Label>
+            </div>
+          </RadioGroup>
+        </div>
+        
+        <div className="space-y-2">
           <Label htmlFor="videoLink">Video Link</Label>
           <div className="relative">
             <Video className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -138,6 +160,21 @@ const BasicInformationForm = ({
               placeholder="https://example.com/video"
               className="pl-8"
               value={record.videoLink}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="remark">Remark</Label>
+          <div className="relative">
+            <MessageSquare className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="remark"
+              name="remark"
+              placeholder="Additional notes"
+              className="pl-8"
+              value={record.remark || ''}
               onChange={handleChange}
             />
           </div>

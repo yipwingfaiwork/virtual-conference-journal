@@ -54,12 +54,12 @@ exports.getRecordById = async (req, res) => {
 // Create record
 exports.createRecord = async (req, res) => {
   try {
-    const { date, duration, department, title, participants, videoLink, textRecord, outline } = req.body;
+    const { date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark } = req.body;
     const createdBy = req.user.userId;
     
     const [result] = await db.query(
-      'INSERT INTO records (date, duration, department, title, participants, videoLink, textRecord, outline, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [date, duration, department, title, JSON.stringify(participants), videoLink, textRecord, outline, createdBy]
+      'INSERT INTO records (date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [date, duration, department, title, JSON.stringify(participants), importFromAI, videoLink, textRecord, outline, remark, createdBy]
     );
     
     // Log record creation
@@ -77,9 +77,11 @@ exports.createRecord = async (req, res) => {
       department, 
       title, 
       participants, 
+      importFromAI,
       videoLink, 
       textRecord, 
-      outline, 
+      outline,
+      remark,
       createdBy,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -94,7 +96,7 @@ exports.createRecord = async (req, res) => {
 exports.updateRecord = async (req, res) => {
   try {
     const recordId = req.params.id;
-    const { date, duration, department, title, participants, videoLink, textRecord, outline } = req.body;
+    const { date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark } = req.body;
     
     // Check if record exists
     const [records] = await db.query('SELECT * FROM records WHERE id = ?', [recordId]);
@@ -111,8 +113,8 @@ exports.updateRecord = async (req, res) => {
     }
     
     await db.query(
-      'UPDATE records SET date = ?, duration = ?, department = ?, title = ?, participants = ?, videoLink = ?, textRecord = ?, outline = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
-      [date, duration, department, title, JSON.stringify(participants), videoLink, textRecord, outline, recordId]
+      'UPDATE records SET date = ?, duration = ?, department = ?, title = ?, participants = ?, importFromAI = ?, videoLink = ?, textRecord = ?, outline = ?, remark = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [date, duration, department, title, JSON.stringify(participants), importFromAI, videoLink, textRecord, outline, remark, recordId]
     );
     
     // Log record update
@@ -130,9 +132,11 @@ exports.updateRecord = async (req, res) => {
       department, 
       title, 
       participants, 
+      importFromAI,
       videoLink, 
       textRecord, 
       outline,
+      remark,
       createdBy: record.createdBy,
       createdAt: record.createdAt,
       updatedAt: new Date()

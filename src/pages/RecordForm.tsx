@@ -25,14 +25,16 @@ const RecordForm = () => {
   const mode = id ? 'edit' : 'create';
   
   const [record, setRecord] = useState<Partial<ConferenceRecord>>({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().slice(0, 16), // Format: YYYY-MM-DDTHH:MM
     duration: '',
     department: '',
     title: '',
     participants: [],
+    importFromAI: false,
     videoLink: '',
     textRecord: '',
     outline: '',
+    remark: '',
   });
   
   const [participantsInput, setParticipantsInput] = useState('');
@@ -87,6 +89,10 @@ const RecordForm = () => {
   
   const handleSelectChange = (name: string, value: string) => {
     setRecord(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRadioChange = (name: string, value: string) => {
+    setRecord(prev => ({ ...prev, [name]: value === 'yes' ? true : false }));
   };
   
   const handleParticipantsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,6 +177,7 @@ const RecordForm = () => {
             handleChange={handleChange}
             handleSelectChange={handleSelectChange}
             handleParticipantsChange={handleParticipantsChange}
+            handleRadioChange={handleRadioChange}
             participantsInput={participantsInput}
           />
           
