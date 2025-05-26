@@ -1,8 +1,8 @@
 
 import { FileText } from 'lucide-react';
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 
 interface TextRecordFormProps {
   textRecord: string;
@@ -10,6 +10,18 @@ interface TextRecordFormProps {
 }
 
 const TextRecordForm = ({ textRecord, handleChange }: TextRecordFormProps) => {
+  const handleRichTextChange = (value: string) => {
+    // Create a synthetic event to match the expected interface
+    const syntheticEvent = {
+      target: {
+        name: 'textRecord',
+        value: value
+      }
+    } as React.ChangeEvent<HTMLTextAreaElement>;
+    
+    handleChange(syntheticEvent);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -21,13 +33,11 @@ const TextRecordForm = ({ textRecord, handleChange }: TextRecordFormProps) => {
             <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
             <Label htmlFor="textRecord">Meeting Notes</Label>
           </div>
-          <Textarea
-            id="textRecord"
-            name="textRecord"
-            placeholder="Enter the text record or meeting minutes here..."
-            rows={10}
+          <RichTextEditor
             value={textRecord}
-            onChange={handleChange}
+            onChange={handleRichTextChange}
+            placeholder="Enter meeting notes with formatting..."
+            className="min-h-[300px]"
           />
         </div>
       </CardContent>
