@@ -2,21 +2,25 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
-import { canUserDeleteRecord, canUserModifyRecord, getCurrentUser } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
+import { PermissionService } from '@/services/permission-service';
 import { useRecord } from '@/hooks/use-records';
 import apiClient from '@/services/api-service';
+import { RecordChange, User } from '@/lib/types';
 import RecordDetailHeader from '@/components/records/RecordDetailHeader';
 import RecordConferenceDetails from '@/components/records/RecordConferenceDetails';
 import RecordParticipants from '@/components/records/RecordParticipants';
 import RecordResources from '@/components/records/RecordResources';
 import RecordContentSections from '@/components/records/RecordContentSections';
+import RecordChangeHistory from '@/components/records/RecordChangeHistory';
 
 const RecordDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<null | any>(null);
-  const [creator, setCreator] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [creator, setCreator] = useState<User | null>(null);
+  const [changes, setChanges] = useState<RecordChange[]>([]);
   const [canModify, setCanModify] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
   
@@ -35,6 +39,18 @@ const RecordDetail = () => {
       setUser(currentUser);
       
       if (record) {
+        // Check permissions using the new permission service
+        const canView = PermissionService.canUserViewRecord(currentUser, record);
+        if (!canView) {
+          toast({
+            title: "Access denied",
+            description: "You don't have permission to view this record.",
+            variant: "destructive",
+          });
+          navigate('/records');
+          return;
+        }
+        
         // Fetch creator info
         try {
           const creatorResponse = await apiClient.get(`/users/${record.createdBy}`);
@@ -43,14 +59,17 @@ const RecordDetail = () => {
           console.error('Error fetching creator data:', error);
         }
         
-        // Check permissions
-        if (currentUser && typeof currentUser === 'object' && 'id' in currentUser) {
-          setCanModify(canUserModifyRecord(currentUser, record.createdBy));
-          setCanDelete(canUserDeleteRecord(currentUser));
-        } else {
-          setCanModify(canUserModifyRecord(currentUser.toString(), record.createdBy));
-          setCanDelete(canUserDeleteRecord(currentUser.toString()));
+        // Fetch change history
+        try {
+          const changesResponse = await apiClient.get(`/records/${id}/changes`);
+          setChanges(changesResponse.data);
+        } catch (error) {
+          console.error('Error fetching change history:', error);
         }
+        
+        // Check permissions
+        setCanModify(PermissionService.canUserEditRecord(currentUser, record));
+        setCanDelete(PermissionService.canUserDeleteRecord(currentUser, record));
       }
     };
     
@@ -108,13 +127,14 @@ const RecordDetail = () => {
       />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <RecordConferenceDetails record={record} creatorName={creator?.name} />
+        <RecordConferenceDetails record={record} creatorName={creator?.name || null} />
         <RecordParticipants participants={record.participants} />
         <RecordResources videoLink={record.videoLink} />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <RecordContentSections record={record} />
+        <RecordChangeHistory changes={changes} />
       </div>
     </div>
   );
