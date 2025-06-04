@@ -22,7 +22,30 @@ apiClient.interceptors.request.use((config) => {
 export const RecordsAPI = {
   getAll: async (filters = {}) => {
     try {
-      const response = await apiClient.get('/records', { params: filters });
+      console.log('API call with filters:', filters);
+      
+      // Process filters to handle arrays properly
+      const processedFilters = { ...filters };
+      
+      // Handle tags array
+      if (processedFilters.tags && Array.isArray(processedFilters.tags)) {
+        processedFilters.tags = processedFilters.tags.filter(tag => tag && tag.trim() !== '');
+      }
+      
+      // Remove empty values
+      Object.keys(processedFilters).forEach(key => {
+        if (processedFilters[key] === '' || processedFilters[key] === null || processedFilters[key] === undefined) {
+          delete processedFilters[key];
+        }
+        if (Array.isArray(processedFilters[key]) && processedFilters[key].length === 0) {
+          delete processedFilters[key];
+        }
+      });
+      
+      console.log('Processed filters:', processedFilters);
+      
+      const response = await apiClient.get('/records', { params: processedFilters });
+      console.log('API response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching records:', error);

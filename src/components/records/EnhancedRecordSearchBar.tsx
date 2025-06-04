@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, RefreshCw, Calendar, Tag } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,13 +43,30 @@ const EnhancedRecordSearchBar = ({
 }: EnhancedRecordSearchBarProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>(filters.tags || []);
 
+  // Sync selectedTags with filters.tags when filters change
+  useEffect(() => {
+    setSelectedTags(filters.tags || []);
+  }, [filters.tags]);
+
   const handleTagToggle = (tagId: string) => {
     const newTags = selectedTags.includes(tagId)
       ? selectedTags.filter(id => id !== tagId)
       : [...selectedTags, tagId];
     
+    console.log('Tag toggle:', { tagId, newTags });
     setSelectedTags(newTags);
     onFiltersChange({ ...filters, tags: newTags });
+  };
+
+  const handleSearchChange = (value: string) => {
+    console.log('Search term changed:', value);
+    onFiltersChange({ ...filters, searchTerm: value });
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    console.log('Filter changed:', { key, value });
+    const newFilters = { ...filters, [key]: value };
+    onFiltersChange(newFilters);
   };
 
   return (
@@ -63,7 +80,7 @@ const EnhancedRecordSearchBar = ({
               placeholder="Search by title, content, keywords..." 
               className="pl-8"
               value={filters.searchTerm || ''}
-              onChange={(e) => onFiltersChange({ ...filters, searchTerm: e.target.value })}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
           <Button 
@@ -98,7 +115,7 @@ const EnhancedRecordSearchBar = ({
                 <Label htmlFor="department">Department</Label>
                 <Select 
                   value={filters.department || ''} 
-                  onValueChange={(value) => onFiltersChange({ ...filters, department: value })}
+                  onValueChange={(value) => handleFilterChange('department', value)}
                 >
                   <SelectTrigger id="department">
                     <SelectValue placeholder="Select department" />
@@ -119,7 +136,7 @@ const EnhancedRecordSearchBar = ({
                 <Label htmlFor="creator">Created By</Label>
                 <Select 
                   value={filters.createdBy || ''} 
-                  onValueChange={(value) => onFiltersChange({ ...filters, createdBy: value })}
+                  onValueChange={(value) => handleFilterChange('createdBy', value)}
                 >
                   <SelectTrigger id="creator">
                     <SelectValue placeholder="Select creator" />
@@ -139,7 +156,7 @@ const EnhancedRecordSearchBar = ({
                 <Label htmlFor="financial-period">Financial Period</Label>
                 <Select 
                   value={filters.financialPeriod || ''} 
-                  onValueChange={(value) => onFiltersChange({ ...filters, financialPeriod: value })}
+                  onValueChange={(value) => handleFilterChange('financialPeriod', value)}
                 >
                   <SelectTrigger id="financial-period">
                     <SelectValue placeholder="Select period" />
@@ -159,7 +176,7 @@ const EnhancedRecordSearchBar = ({
                 <Label htmlFor="access-level">Access Level</Label>
                 <Select 
                   value={filters.accessLevel || ''} 
-                  onValueChange={(value) => onFiltersChange({ ...filters, accessLevel: value })}
+                  onValueChange={(value) => handleFilterChange('accessLevel', value)}
                 >
                   <SelectTrigger id="access-level">
                     <SelectValue placeholder="Select access level" />
@@ -182,7 +199,7 @@ const EnhancedRecordSearchBar = ({
                   id="date-from"
                   type="datetime-local"
                   value={filters.dateFrom || ''}
-                  onChange={(e) => onFiltersChange({ ...filters, dateFrom: e.target.value })}
+                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -191,7 +208,7 @@ const EnhancedRecordSearchBar = ({
                   id="date-to"
                   type="datetime-local"
                   value={filters.dateTo || ''}
-                  onChange={(e) => onFiltersChange({ ...filters, dateTo: e.target.value })}
+                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}
                 />
               </div>
             </div>

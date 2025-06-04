@@ -1,3 +1,4 @@
+
 const db = require('../config/db');
 const { logActivity } = require('../utils/logger');
 
@@ -69,6 +70,8 @@ const checkRecordAccess = async (userId, recordId, accessType = 'read') => {
 // Enhanced search with filters
 exports.getAllRecords = async (req, res) => {
   try {
+    console.log('getAllRecords called with query:', req.query);
+    
     const { 
       department, 
       searchTerm, 
@@ -98,16 +101,19 @@ exports.getAllRecords = async (req, res) => {
     let params = [];
     let conditions = [];
     
-    // Access control based on user permissions
+    // Get user info for access control
     const [userInfo] = await db.query('SELECT * FROM users WHERE id = ?', [req.user.userId]);
     const user = userInfo[0];
     
+    console.log('User info:', { id: user.id, isAdmin: user.isAdmin, accessLevel: user.accessLevel, departmentId: user.departmentId });
+    
+    // Access control based on user permissions
     if (!user.isAdmin) {
       if (user.accessLevel < 3) {
         // Basic users can only see their department's public/department records
         conditions.push(`(
           r.accessLevel IN ('PUBLIC', 'DEPARTMENT') AND r.departmentId = ?
-          OR JSON_CONTAINS(r.allowedUsers, ?, '$')
+          OR JSON_CONTAINS(IFNULL(r.allowedUsers, '[]'), ?, '$')
           OR r.createdBy = ?
         )`);
         params.push(user.departmentId, `"${user.id}"`, user.id);
@@ -115,7 +121,7 @@ exports.getAllRecords = async (req, res) => {
         // Managers can see more but not confidential unless specifically allowed
         conditions.push(`(
           r.accessLevel != 'CONFIDENTIAL'
-          OR JSON_CONTAINS(r.allowedUsers, ?, '$')
+          OR JSON_CONTAINS(IFNULL(r.allowedUsers, '[]'), ?, '$')
           OR r.createdBy = ?
         )`);
         params.push(`"${user.id}"`, user.id);
@@ -123,12 +129,14 @@ exports.getAllRecords = async (req, res) => {
     }
     
     // Apply filters
-    if (department && department !== 'all') {
+    if (department && department !== 'all' && department !== '') {
+      console.log('Filtering by department:', department);
       conditions.push('d.name = ?');
       params.push(department);
     }
     
-    if (searchTerm) {
+    if (searchTerm && searchTerm.trim() !== '') {
+      console.log('Filtering by search term:', searchTerm);
       conditions.push(`(
         r.title LIKE ? OR 
         r.textRecord LIKE ? OR 
@@ -136,38 +144,47 @@ exports.getAllRecords = async (req, res) => {
         r.remark LIKE ? OR
         u.name LIKE ?
       )`);
-      const searchPattern = `%${searchTerm}%`;
+      const searchPattern = `%${searchTerm.trim()}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
     }
     
-    if (tags) {
-      const tagList = Array.isArray(tags) ? tags : tags.split(',');
-      const tagPlaceholders = tagList.map(() => '?').join(',');
-      conditions.push(`t.id IN (${tagPlaceholders})`);
-      params.push(...tagList);
+    if (tags && tags.length > 0) {
+      console.log('Filtering by tags:', tags);
+      const tagList = Array.isArray(tags) ? tags : [tags];
+      const validTags = tagList.filter(tag => tag && tag.trim() !== '');
+      if (validTags.length > 0) {
+        const tagPlaceholders = validTags.map(() => '?').join(',');
+        conditions.push(`t.id IN (${tagPlaceholders})`);
+        params.push(...validTags);
+      }
     }
     
-    if (financialPeriod) {
+    if (financialPeriod && financialPeriod !== '') {
+      console.log('Filtering by financial period:', financialPeriod);
       conditions.push('r.financialPeriodId = ?');
       params.push(financialPeriod);
     }
     
-    if (dateFrom) {
+    if (dateFrom && dateFrom !== '') {
+      console.log('Filtering by date from:', dateFrom);
       conditions.push('r.date >= ?');
       params.push(dateFrom);
     }
     
-    if (dateTo) {
+    if (dateTo && dateTo !== '') {
+      console.log('Filtering by date to:', dateTo);
       conditions.push('r.date <= ?');
       params.push(dateTo);
     }
     
-    if (createdBy) {
+    if (createdBy && createdBy !== '') {
+      console.log('Filtering by creator:', createdBy);
       conditions.push('r.createdBy = ?');
       params.push(createdBy);
     }
     
-    if (accessLevel) {
+    if (accessLevel && accessLevel !== '') {
+      console.log('Filtering by access level:', accessLevel);
       conditions.push('r.accessLevel = ?');
       params.push(accessLevel);
     }
@@ -182,7 +199,12 @@ exports.getAllRecords = async (req, res) => {
     const offset = (page - 1) * limit;
     query += ` LIMIT ${limit} OFFSET ${offset}`;
     
+    console.log('Final query:', query);
+    console.log('Query params:', params);
+    
     const [results] = await db.query(query, params);
+    
+    console.log('Query results count:', results.length);
     
     // Process results to include tags
     const processedResults = results.map(record => ({
@@ -289,55 +311,6 @@ exports.getRecordById = async (req, res) => {
     );
     
     res.json(recordWithTags);
-  } catch (error) {
-    console.error(`Error fetching record ${req.params.id}:`, error);
-    res.status(500).json({ error: 'Failed to fetch record' });
-  }
-};
-
-// Get all records
-exports.getAllRecords = async (req, res) => {
-  try {
-    const { department } = req.query;
-    
-    let query = 'SELECT * FROM records';
-    let params = [];
-    
-    if (department && department !== 'all') {
-      query += ' WHERE department = ?';
-      params.push(department);
-    }
-    
-    const [results] = await db.query(query, params);
-    
-    // Log the view activity for general records view
-    await logActivity(req.user.userId, 'VIEW_RECORDS', 'Viewed records list');
-    
-    res.json(results);
-  } catch (error) {
-    console.error('Error fetching records:', error);
-    res.status(500).json({ error: 'Failed to fetch records' });
-  }
-};
-
-// Get record by ID
-exports.getRecordById = async (req, res) => {
-  try {
-    const [results] = await db.query('SELECT * FROM records WHERE id = ?', [req.params.id]);
-    
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'Record not found' });
-    }
-    
-    // Log the view activity for specific record
-    await logActivity(
-      req.user.userId, 
-      'VIEW_RECORD',
-      `Viewed record: ${results[0].title}`,
-      req.params.id
-    );
-    
-    res.json(results[0]);
   } catch (error) {
     console.error(`Error fetching record ${req.params.id}:`, error);
     res.status(500).json({ error: 'Failed to fetch record' });
