@@ -20,7 +20,9 @@ const setupMiddleware = (app) => {
   app.use(cors({
     origin: [
       'https://lemon-moss-03941a703.azurestaticapps.net',
-      'https://lemon-moss-03941a703.6.azurestaticapps.net'
+      'https://lemon-moss-03941a703.6.azurestaticapps.net',
+      'http://localhost:8080',
+      'http://localhost:3000'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
