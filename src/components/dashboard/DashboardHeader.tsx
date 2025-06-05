@@ -17,10 +17,7 @@ const DashboardHeader = ({ user }: DashboardHeaderProps) => {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-terracotta">Welcome, {user.name}</h1>
         <p className="text-muted-foreground mt-1 flex items-center">
-          Access Level: <AccessLevelBadge accessLevel={user.accessLevel} className="ml-2" />
-          {user.isAdmin && (
-            <span className="ml-2 text-xs bg-gray text-white px-2 py-0.5 rounded">Admin</span>
-          )}
+          Role: <AccessLevelBadge isAdmin={user.isAdmin} className="ml-2" />
         </p>
       </div>
       <div className="mt-4 sm:mt-0">

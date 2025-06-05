@@ -1,39 +1,30 @@
 
 import { Badge } from "@/components/ui/badge";
-import { User } from "@/lib/types";
 
 interface AccessLevelBadgeProps {
-  accessLevel: User['accessLevel'];
+  isAdmin: boolean;
   showLabel?: boolean;
-  className?: string; // Add className prop support
+  className?: string;
 }
 
-const AccessLevelBadge = ({ accessLevel, showLabel = true, className }: AccessLevelBadgeProps) => {
+const AccessLevelBadge = ({ isAdmin, showLabel = true, className }: AccessLevelBadgeProps) => {
   let badgeColor = '';
   let badgeVariant: 'default' | 'secondary' | 'outline' = 'default';
   let label = '';
 
-  switch (accessLevel) {
-    case 1:
-      badgeColor = 'bg-teal/30 text-teal-foreground border-teal hover:bg-teal/40';
-      badgeVariant = 'outline';
-      label = 'Level 1';
-      break;
-    case 2:
-      badgeColor = 'bg-gold/30 text-gold-foreground border-gold hover:bg-gold/40';
-      badgeVariant = 'outline';
-      label = 'Level 2';
-      break;
-    case 3:
-      badgeColor = 'bg-terracotta/30 text-terracotta-foreground border-terracotta hover:bg-terracotta/40';
-      badgeVariant = 'outline';
-      label = 'Level 3';
-      break;
+  if (isAdmin) {
+    badgeColor = 'bg-terracotta/30 text-terracotta-foreground border-terracotta hover:bg-terracotta/40';
+    badgeVariant = 'outline';
+    label = 'Admin';
+  } else {
+    badgeColor = 'bg-teal/30 text-teal-foreground border-teal hover:bg-teal/40';
+    badgeVariant = 'outline';
+    label = 'User';
   }
 
   return (
     <Badge variant={badgeVariant} className={`${badgeColor} ${className || ''}`}>
-      {showLabel ? label : `${accessLevel}`}
+      {showLabel ? label : (isAdmin ? 'A' : 'U')}
     </Badge>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Phone, MapPin, Building, Mail, Key, Save } from 'lucide-react';
@@ -176,7 +175,7 @@ const ProfilePage = () => {
                   <div>
                     <p className="font-medium">{user.name}</p>
                     <div className="flex items-center mt-1">
-                      <AccessLevelBadge accessLevel={user.accessLevel} />
+                      <AccessLevelBadge isAdmin={user.isAdmin} />
                       {user.isAdmin && (
                         <span className="ml-2 text-xs bg-gray text-white px-2 py-0.5 rounded">
                           Admin

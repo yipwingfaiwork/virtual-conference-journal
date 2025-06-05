@@ -1,5 +1,5 @@
 
-import { Calendar, Clock, User, FileText, Video, Import, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, User, FileText, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConferenceRecord } from '@/lib/types';
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from '@/components/ui/badge';
 
 interface RecordTableRowProps {
   record: ConferenceRecord;
@@ -79,12 +78,6 @@ const RecordTableRow = ({ record, getCreatorName }: RecordTableRowProps) => {
                 <div>
                   <h3 className="text-sm font-medium mb-1">Participants</h3>
                   <p className="text-sm">{record.participants.join(', ')}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Import from AI</h3>
-                  <Badge variant={record.importFromAI ? "default" : "outline"}>
-                    {record.importFromAI ? 'Yes' : 'No'}
-                  </Badge>
                 </div>
                 <Separator />
                 <div>

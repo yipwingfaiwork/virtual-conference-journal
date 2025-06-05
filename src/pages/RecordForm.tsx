@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -30,7 +29,6 @@ const RecordForm = () => {
     department: '',
     title: '',
     participants: [],
-    importFromAI: false,
     videoLink: '',
     textRecord: '',
     outline: '',
@@ -92,7 +90,8 @@ const RecordForm = () => {
   };
 
   const handleRadioChange = (name: string, value: string) => {
-    setRecord(prev => ({ ...prev, [name]: value === 'yes' ? true : false }));
+    // This function is no longer needed but keeping for compatibility
+    console.log('Radio change:', name, value);
   };
   
   const handleParticipantsChange = (e: React.ChangeEvent<HTMLInputElement>) => {

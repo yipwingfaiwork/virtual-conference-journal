@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ConferenceRecord } from '@/lib/types';
-import { FileText, Import, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 interface RecordContentSectionsProps {
   record: ConferenceRecord;
@@ -40,15 +40,8 @@ const RecordContentSections = ({ record }: RecordContentSectionsProps) => {
           <CardTitle className="text-lg font-medium">Additional Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center">
-            <Import className="h-4 w-4 mr-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mr-2">Import from AI:</p>
-            <p>{record.importFromAI ? 'Yes' : 'No'}</p>
-          </div>
-          
           {record.remark && (
             <>
-              <Separator />
               <div className="flex items-start">
                 <MessageSquare className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
                 <div>
@@ -56,10 +49,10 @@ const RecordContentSections = ({ record }: RecordContentSectionsProps) => {
                   <p className="whitespace-pre-line">{record.remark}</p>
                 </div>
               </div>
+              <Separator />
             </>
           )}
           
-          <Separator />
           <div>
             <p className="text-sm text-muted-foreground">Created at:</p>
             <p>{new Date(record.createdAt).toLocaleString()}</p>
