@@ -18,9 +18,22 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Define the filters interface
+interface RecordFilters {
+  searchTerm?: string;
+  department?: string;
+  tags?: string[];
+  financialPeriod?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  createdBy?: string;
+  accessLevel?: string;
+  [key: string]: any; // Allow additional properties
+}
+
 // Records API methods
 export const RecordsAPI = {
-  getAll: async (filters = {}) => {
+  getAll: async (filters: RecordFilters = {}) => {
     try {
       console.log('API call with filters:', filters);
       
@@ -96,7 +109,7 @@ export const RecordsAPI = {
 
 // Activity Logs API methods (admin only)
 export const ActivityLogsAPI = {
-  getAll: async (filters = {}) => {
+  getAll: async (filters: RecordFilters = {}) => {
     try {
       const response = await apiClient.get('/activity-logs', { params: filters });
       return response.data;
