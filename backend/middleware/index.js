@@ -19,14 +19,13 @@ const express = require('express');
 const setupMiddleware = (app) => {
   app.use(cors({
     origin: [
-      'https://lemon-moss-03941a703.azurestaticapps.net',
-      'https://lemon-moss-03941a703.6.azurestaticapps.net',
+      'https://lemon-moss-03941a703.6.azurestaticapps.net', // 正確的前端域名
       'http://localhost:8080',
       'http://localhost:3000'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false
+    credentials: true // 與 Azure 門戶設置一致
   }));
   app.use(express.json());
 };
