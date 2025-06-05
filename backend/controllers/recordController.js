@@ -1,455 +1,437 @@
 
-const db = require('../config/db');
-const { logActivity } = require('../utils/logger');
+const pool = require('../config/db');
 
-// Enhanced permission checking
-const checkRecordAccess = async (userId, recordId, accessType = 'read') => {
-  const [records] = await db.query(`
-    SELECT r.*, d.name as departmentName, u.accessLevel, u.departmentId, u.isAdmin
-    FROM records r
-    LEFT JOIN departments d ON r.departmentId = d.id
-    LEFT JOIN users u ON u.id = ?
-    WHERE r.id = ?
-  `, [userId, recordId]);
-  
-  if (records.length === 0) {
-    return { hasAccess: false, record: null };
-  }
-  
-  const record = records[0];
-  const user = {
-    id: userId,
-    accessLevel: record.accessLevel,
-    departmentId: record.departmentId,
-    isAdmin: record.isAdmin
-  };
-  
-  let hasAccess = false;
-  
-  // Admin has full access
-  if (user.isAdmin) {
-    hasAccess = true;
-  } else {
-    switch (record.accessLevel) {
-      case 'PUBLIC':
-        hasAccess = true;
-        break;
-      case 'DEPARTMENT':
-        hasAccess = user.departmentId === record.departmentId ||
-                   (record.allowedDepartments && JSON.parse(record.allowedDepartments || '[]').includes(user.departmentId)) ||
-                   (record.allowedUsers && JSON.parse(record.allowedUsers || '[]').includes(userId));
-        break;
-      case 'RESTRICTED':
-        hasAccess = (record.allowedUsers && JSON.parse(record.allowedUsers || '[]').includes(userId)) ||
-                   (record.allowedDepartments && JSON.parse(record.allowedDepartments || '[]').includes(user.departmentId)) ||
-                   user.accessLevel >= 3;
-        break;
-      case 'CONFIDENTIAL':
-        hasAccess = user.isAdmin || 
-                   record.createdBy === userId ||
-                   (record.allowedUsers && JSON.parse(record.allowedUsers || '[]').includes(userId));
-        break;
-    }
-  }
-  
-  // Additional checks for write/delete access
-  if (hasAccess && accessType !== 'read') {
-    if (accessType === 'write') {
-      hasAccess = user.isAdmin || 
-                 record.createdBy === userId ||
-                 (user.departmentId === record.departmentId && user.accessLevel >= 2) ||
-                 (user.accessLevel >= 3 && record.allowedUsers && JSON.parse(record.allowedUsers || '[]').includes(userId));
-    } else if (accessType === 'delete') {
-      hasAccess = user.isAdmin || (user.accessLevel >= 3 && record.createdBy === userId);
-    }
-  }
-  
-  return { hasAccess, record };
-};
-
-// Enhanced search with filters
-exports.getAllRecords = async (req, res) => {
+// Get all records with enhanced filtering and access control
+const getAllRecords = async (req, res) => {
   try {
-    console.log('getAllRecords called with query:', req.query);
+    const userId = req.user.id;
+    const userInfo = req.user;
     
-    const { 
-      department, 
-      searchTerm, 
-      tags, 
-      financialPeriod, 
-      dateFrom, 
-      dateTo, 
-      createdBy, 
-      accessLevel,
-      page = 1,
-      limit = 20
-    } = req.query;
+    console.log('User info:', userInfo);
+    console.log('Query params:', req.query);
     
-    let query = `
-      SELECT DISTINCT r.*, d.name as departmentName, u.name as creatorName,
-             GROUP_CONCAT(DISTINCT t.id) as tagIds,
-             GROUP_CONCAT(DISTINCT t.name) as tagNames,
-             GROUP_CONCAT(DISTINCT t.color) as tagColors
+    let baseQuery = `
+      SELECT 
+        r.*,
+        d.name as department,
+        u.name as creatorName,
+        fp.name as financialPeriodName,
+        JSON_ARRAYAGG(
+          CASE 
+            WHEN t.id IS NOT NULL 
+            THEN JSON_OBJECT('id', t.id, 'name', t.name, 'color', t.color, 'description', t.description)
+            ELSE NULL 
+          END
+        ) as tags
       FROM records r
       LEFT JOIN departments d ON r.departmentId = d.id
       LEFT JOIN users u ON r.createdBy = u.id
+      LEFT JOIN financial_periods fp ON r.financialPeriodId = fp.id
       LEFT JOIN record_tags rt ON r.id = rt.recordId
       LEFT JOIN tags t ON rt.tagId = t.id
-      WHERE 1=1
     `;
     
-    let params = [];
-    let conditions = [];
-    
-    // Get user info for access control
-    const [userInfo] = await db.query('SELECT * FROM users WHERE id = ?', [req.user.userId]);
-    const user = userInfo[0];
-    
-    console.log('User info:', { id: user.id, isAdmin: user.isAdmin, accessLevel: user.accessLevel, departmentId: user.departmentId });
+    const conditions = [];
+    const params = [];
     
     // Access control based on user permissions
-    if (!user.isAdmin) {
-      if (user.accessLevel < 3) {
-        // Basic users can only see their department's public/department records
-        conditions.push(`(
-          r.accessLevel IN ('PUBLIC', 'DEPARTMENT') AND r.departmentId = ?
-          OR JSON_CONTAINS(IFNULL(r.allowedUsers, '[]'), ?, '$')
-          OR r.createdBy = ?
-        )`);
-        params.push(user.departmentId, `"${user.id}"`, user.id);
-      } else {
-        // Managers can see more but not confidential unless specifically allowed
-        conditions.push(`(
-          r.accessLevel != 'CONFIDENTIAL'
-          OR JSON_CONTAINS(IFNULL(r.allowedUsers, '[]'), ?, '$')
-          OR r.createdBy = ?
-        )`);
-        params.push(`"${user.id}"`, user.id);
-      }
-    }
-    
-    // Apply filters
-    if (department && department !== 'all' && department !== '') {
-      console.log('Filtering by department:', department);
-      conditions.push('d.name = ?');
-      params.push(department);
-    }
-    
-    if (searchTerm && searchTerm.trim() !== '') {
-      console.log('Filtering by search term:', searchTerm);
+    if (!userInfo.isAdmin) {
       conditions.push(`(
-        r.title LIKE ? OR 
-        r.textRecord LIKE ? OR 
-        r.outline LIKE ? OR
-        r.remark LIKE ? OR
-        u.name LIKE ?
+        r.accessLevel = 'PUBLIC' OR 
+        (r.accessLevel = 'DEPARTMENT' AND r.departmentId = ?) OR
+        (r.accessLevel = 'RESTRICTED' AND (r.createdBy = ? OR JSON_CONTAINS(r.allowedUsers, ?))) OR
+        (r.accessLevel = 'CONFIDENTIAL' AND r.createdBy = ?)
       )`);
-      const searchPattern = `%${searchTerm.trim()}%`;
-      params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+      params.push(userInfo.departmentId, userId, `"${userId}"`, userId);
     }
     
-    if (tags && tags.length > 0) {
-      console.log('Filtering by tags:', tags);
-      const tagList = Array.isArray(tags) ? tags : [tags];
-      const validTags = tagList.filter(tag => tag && tag.trim() !== '');
-      if (validTags.length > 0) {
-        const tagPlaceholders = validTags.map(() => '?').join(',');
-        conditions.push(`t.id IN (${tagPlaceholders})`);
-        params.push(...validTags);
-      }
+    // Search term filter
+    if (req.query.searchTerm) {
+      conditions.push(`(r.title LIKE ? OR r.textRecord LIKE ? OR r.outline LIKE ?)`);
+      const searchPattern = `%${req.query.searchTerm}%`;
+      params.push(searchPattern, searchPattern, searchPattern);
     }
     
-    if (financialPeriod && financialPeriod !== '') {
-      console.log('Filtering by financial period:', financialPeriod);
-      conditions.push('r.financialPeriodId = ?');
-      params.push(financialPeriod);
+    // Department filter
+    if (req.query.department) {
+      conditions.push(`r.departmentId = ?`);
+      params.push(req.query.department);
     }
     
-    if (dateFrom && dateFrom !== '') {
-      console.log('Filtering by date from:', dateFrom);
-      conditions.push('r.date >= ?');
-      params.push(dateFrom);
+    // Financial period filter
+    if (req.query.financialPeriod) {
+      conditions.push(`r.financialPeriodId = ?`);
+      params.push(req.query.financialPeriod);
     }
     
-    if (dateTo && dateTo !== '') {
-      console.log('Filtering by date to:', dateTo);
-      conditions.push('r.date <= ?');
-      params.push(dateTo);
+    // Date range filters
+    if (req.query.dateFrom) {
+      conditions.push(`r.date >= ?`);
+      params.push(req.query.dateFrom);
     }
     
-    if (createdBy && createdBy !== '') {
-      console.log('Filtering by creator:', createdBy);
-      conditions.push('r.createdBy = ?');
-      params.push(createdBy);
+    if (req.query.dateTo) {
+      conditions.push(`r.date <= ?`);
+      params.push(req.query.dateTo);
     }
     
-    if (accessLevel && accessLevel !== '') {
-      console.log('Filtering by access level:', accessLevel);
-      conditions.push('r.accessLevel = ?');
-      params.push(accessLevel);
+    // Created by filter
+    if (req.query.createdBy) {
+      conditions.push(`r.createdBy = ?`);
+      params.push(req.query.createdBy);
     }
     
+    // Access level filter
+    if (req.query.accessLevel) {
+      conditions.push(`r.accessLevel = ?`);
+      params.push(req.query.accessLevel);
+    }
+    
+    // Add WHERE clause if there are conditions
     if (conditions.length > 0) {
-      query += ' AND ' + conditions.join(' AND ');
+      baseQuery += ` WHERE ${conditions.join(' AND ')}`;
     }
     
-    query += ' GROUP BY r.id ORDER BY r.date DESC';
+    // Group by and order
+    baseQuery += ` GROUP BY r.id ORDER BY r.date DESC`;
     
-    // Add pagination
-    const offset = (page - 1) * limit;
-    query += ` LIMIT ${limit} OFFSET ${offset}`;
-    
-    console.log('Final query:', query);
+    console.log('Final query:', baseQuery);
     console.log('Query params:', params);
     
-    const [results] = await db.query(query, params);
+    const [rows] = await pool.execute(baseQuery, params);
     
-    console.log('Query results count:', results.length);
-    
-    // Process results to include tags
-    const processedResults = results.map(record => ({
-      ...record,
-      department: record.departmentName,
-      tags: record.tagIds ? record.tagIds.split(',').map((id, index) => ({
-        id,
-        name: record.tagNames.split(',')[index],
-        color: record.tagColors.split(',')[index]
-      })) : []
+    // Process the results to clean up tags
+    const processedRows = rows.map(row => ({
+      ...row,
+      tags: row.tags ? row.tags.filter(tag => tag !== null) : [],
+      participants: row.participants ? JSON.parse(row.participants) : [],
+      allowedDepartments: row.allowedDepartments ? JSON.parse(row.allowedDepartments) : [],
+      allowedUsers: row.allowedUsers ? JSON.parse(row.allowedUsers) : []
     }));
     
-    // Log the view activity
-    await logActivity(req.user.userId, 'VIEW_RECORDS', 'Viewed records list with filters');
+    // Apply tag filter after processing (since we need to check the actual tag IDs)
+    let filteredRows = processedRows;
+    if (req.query.tags && Array.isArray(req.query.tags) && req.query.tags.length > 0) {
+      filteredRows = processedRows.filter(record => {
+        const recordTagIds = record.tags.map(tag => tag.id.toString());
+        return req.query.tags.some(tagId => recordTagIds.includes(tagId.toString()));
+      });
+    }
     
-    res.json(processedResults);
+    console.log(`Returning ${filteredRows.length} records`);
+    res.json(filteredRows);
+    
   } catch (error) {
     console.error('Error fetching records:', error);
-    res.status(500).json({ error: 'Failed to fetch records' });
+    res.status(500).json({ error: 'Failed to fetch records', details: error.message });
   }
 };
 
-// Get record changes
-exports.getRecordChanges = async (req, res) => {
+// Get single record by ID with access control
+const getRecordById = async (req, res) => {
   try {
-    const recordId = req.params.id;
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userInfo = req.user;
     
-    // Check if user can view this record
-    const { hasAccess } = await checkRecordAccess(req.user.userId, recordId, 'read');
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
+    let query = `
+      SELECT 
+        r.*,
+        d.name as department,
+        u.name as creatorName,
+        fp.name as financialPeriodName,
+        JSON_ARRAYAGG(
+          CASE 
+            WHEN t.id IS NOT NULL 
+            THEN JSON_OBJECT('id', t.id, 'name', t.name, 'color', t.color, 'description', t.description)
+            ELSE NULL 
+          END
+        ) as tags
+      FROM records r
+      LEFT JOIN departments d ON r.departmentId = d.id
+      LEFT JOIN users u ON r.createdBy = u.id
+      LEFT JOIN financial_periods fp ON r.financialPeriodId = fp.id
+      LEFT JOIN record_tags rt ON r.id = rt.recordId
+      LEFT JOIN tags t ON rt.tagId = t.id
+      WHERE r.id = ?
+    `;
+    
+    const params = [id];
+    
+    // Add access control for non-admin users
+    if (!userInfo.isAdmin) {
+      query += ` AND (
+        r.accessLevel = 'PUBLIC' OR 
+        (r.accessLevel = 'DEPARTMENT' AND r.departmentId = ?) OR
+        (r.accessLevel = 'RESTRICTED' AND (r.createdBy = ? OR JSON_CONTAINS(r.allowedUsers, ?))) OR
+        (r.accessLevel = 'CONFIDENTIAL' AND r.createdBy = ?)
+      )`;
+      params.push(userInfo.departmentId, userId, `"${userId}"`, userId);
     }
     
-    const [changes] = await db.query(`
-      SELECT rc.*, u.name as changedByName
+    query += ` GROUP BY r.id`;
+    
+    const [rows] = await pool.execute(query, params);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Record not found or access denied' });
+    }
+    
+    const record = {
+      ...rows[0],
+      tags: rows[0].tags ? rows[0].tags.filter(tag => tag !== null) : [],
+      participants: rows[0].participants ? JSON.parse(rows[0].participants) : [],
+      allowedDepartments: rows[0].allowedDepartments ? JSON.parse(rows[0].allowedDepartments) : [],
+      allowedUsers: rows[0].allowedUsers ? JSON.parse(rows[0].allowedUsers) : []
+    };
+    
+    res.json(record);
+    
+  } catch (error) {
+    console.error('Error fetching record:', error);
+    res.status(500).json({ error: 'Failed to fetch record', details: error.message });
+  }
+};
+
+// Get record changes/history
+const getRecordChanges = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const query = `
+      SELECT 
+        rc.*,
+        u.name as changedByName
       FROM record_changes rc
       LEFT JOIN users u ON rc.changedBy = u.id
       WHERE rc.recordId = ?
       ORDER BY rc.createdAt DESC
-    `, [recordId]);
+    `;
     
-    res.json(changes);
+    const [rows] = await pool.execute(query, [id]);
+    res.json(rows);
+    
   } catch (error) {
     console.error('Error fetching record changes:', error);
     res.status(500).json({ error: 'Failed to fetch record changes' });
   }
 };
 
-// Log record changes
-const logRecordChange = async (recordId, userId, changeType, fieldChanged = null, oldValue = null, newValue = null, description = null) => {
+// Create new record
+const createRecord = async (req, res) => {
   try {
-    await db.query(
-      'INSERT INTO record_changes (recordId, changedBy, changeType, fieldChanged, oldValue, newValue, changeDescription) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [recordId, userId, changeType, fieldChanged, oldValue, newValue, description]
-    );
-  } catch (error) {
-    console.error('Error logging record change:', error);
-  }
-};
-
-// Get record by ID with enhanced access control
-exports.getRecordById = async (req, res) => {
-  try {
-    const { hasAccess, record } = await checkRecordAccess(req.user.userId, req.params.id, 'read');
+    const userId = req.user.id;
+    const userInfo = req.user;
     
-    if (!hasAccess) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
-    if (!record) {
-      return res.status(404).json({ error: 'Record not found' });
-    }
-    
-    // Get record with tags
-    const [results] = await db.query(`
-      SELECT r.*, d.name as departmentName,
-             GROUP_CONCAT(DISTINCT t.id) as tagIds,
-             GROUP_CONCAT(DISTINCT t.name) as tagNames,
-             GROUP_CONCAT(DISTINCT t.color) as tagColors
-      FROM records r
-      LEFT JOIN departments d ON r.departmentId = d.id
-      LEFT JOIN record_tags rt ON r.id = rt.recordId
-      LEFT JOIN tags t ON rt.tagId = t.id
-      WHERE r.id = ?
-      GROUP BY r.id
-    `, [req.params.id]);
-    
-    const recordWithTags = {
-      ...results[0],
-      department: results[0].departmentName,
-      tags: results[0].tagIds ? results[0].tagIds.split(',').map((id, index) => ({
-        id,
-        name: results[0].tagNames.split(',')[index],
-        color: results[0].tagColors.split(',')[index]
-      })) : []
-    };
-    
-    // Log the view activity
-    await logActivity(
-      req.user.userId, 
-      'VIEW_RECORD',
-      `Viewed record: ${recordWithTags.title}`,
-      req.params.id
-    );
-    
-    res.json(recordWithTags);
-  } catch (error) {
-    console.error(`Error fetching record ${req.params.id}:`, error);
-    res.status(500).json({ error: 'Failed to fetch record' });
-  }
-};
-
-// Create record
-exports.createRecord = async (req, res) => {
-  try {
-    const { date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark } = req.body;
-    const createdBy = req.user.userId;
-    
-    const [result] = await db.query(
-      'INSERT INTO records (date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [date, duration, department, title, JSON.stringify(participants), importFromAI, videoLink, textRecord, outline, remark, createdBy]
-    );
-    
-    // Log record creation
-    await logActivity(
-      createdBy, 
-      'CREATE_RECORD', 
-      `Created new record: ${title}`,
-      result.insertId
-    );
-    
-    res.status(201).json({ 
-      id: result.insertId, 
-      date, 
-      duration, 
-      department, 
-      title, 
-      participants, 
+    const {
+      date,
+      duration,
+      departmentId,
+      title,
+      participants,
       importFromAI,
-      videoLink, 
-      textRecord, 
+      videoLink,
+      textRecord,
       outline,
       remark,
-      createdBy,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
+      financialPeriodId,
+      accessLevel,
+      allowedDepartments,
+      allowedUsers,
+      tags
+    } = req.body;
+    
+    // Insert the record
+    const insertQuery = `
+      INSERT INTO records (
+        date, duration, departmentId, title, participants, importFromAI,
+        videoLink, textRecord, outline, remark, createdBy, financialPeriodId,
+        accessLevel, allowedDepartments, allowedUsers
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const [result] = await pool.execute(insertQuery, [
+      date,
+      duration,
+      departmentId || userInfo.departmentId,
+      title,
+      JSON.stringify(participants || []),
+      importFromAI || false,
+      videoLink || '',
+      textRecord || '',
+      outline || '',
+      remark || '',
+      userId,
+      financialPeriodId,
+      accessLevel || 'DEPARTMENT',
+      JSON.stringify(allowedDepartments || []),
+      JSON.stringify(allowedUsers || [])
+    ]);
+    
+    const recordId = result.insertId;
+    
+    // Add tags if provided
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      const tagInserts = tags.map(tagId => [recordId, tagId]);
+      await pool.execute(
+        `INSERT INTO record_tags (recordId, tagId) VALUES ${tags.map(() => '(?, ?)').join(', ')}`,
+        tagInserts.flat()
+      );
+    }
+    
+    // Log the change
+    await pool.execute(
+      `INSERT INTO record_changes (recordId, changedBy, changeType, changeDescription) VALUES (?, ?, ?, ?)`,
+      [recordId, userId, 'CREATE', `Created new record: ${title}`]
+    );
+    
+    res.status(201).json({ id: recordId, message: 'Record created successfully' });
+    
   } catch (error) {
     console.error('Error creating record:', error);
-    res.status(500).json({ error: 'Failed to create record' });
+    res.status(500).json({ error: 'Failed to create record', details: error.message });
   }
 };
 
 // Update record
-exports.updateRecord = async (req, res) => {
+const updateRecord = async (req, res) => {
   try {
-    const recordId = req.params.id;
-    const { date, duration, department, title, participants, importFromAI, videoLink, textRecord, outline, remark } = req.body;
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userInfo = req.user;
     
-    // Check if record exists
-    const [records] = await db.query('SELECT * FROM records WHERE id = ?', [recordId]);
+    // First check if user has permission to update this record
+    const checkQuery = `
+      SELECT * FROM records 
+      WHERE id = ? AND (createdBy = ? OR ? = true)
+    `;
     
-    if (records.length === 0) {
-      return res.status(404).json({ error: 'Record not found' });
+    const [existingRecords] = await pool.execute(checkQuery, [id, userId, userInfo.isAdmin]);
+    
+    if (existingRecords.length === 0) {
+      return res.status(403).json({ error: 'Permission denied to update this record' });
     }
     
-    const record = records[0];
+    const existingRecord = existingRecords[0];
     
-    // Check if user has permission to update this record
-    if (record.createdBy != req.user.userId && !req.user.isAdmin) {
-      return res.status(403).json({ error: 'Unauthorized to update this record' });
-    }
-    
-    await db.query(
-      'UPDATE records SET date = ?, duration = ?, department = ?, title = ?, participants = ?, importFromAI = ?, videoLink = ?, textRecord = ?, outline = ?, remark = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
-      [date, duration, department, title, JSON.stringify(participants), importFromAI, videoLink, textRecord, outline, remark, recordId]
-    );
-    
-    // Log record update
-    await logActivity(
-      req.user.userId, 
-      'UPDATE_RECORD', 
-      `Updated record: ${title}`,
-      recordId
-    );
-    
-    res.json({ 
-      id: recordId, 
-      date, 
-      duration, 
-      department, 
-      title, 
-      participants, 
+    const {
+      date,
+      duration,
+      departmentId,
+      title,
+      participants,
       importFromAI,
-      videoLink, 
-      textRecord, 
+      videoLink,
+      textRecord,
       outline,
       remark,
-      createdBy: record.createdBy,
-      createdAt: record.createdAt,
-      updatedAt: new Date()
-    });
+      financialPeriodId,
+      accessLevel,
+      allowedDepartments,
+      allowedUsers,
+      tags
+    } = req.body;
+    
+    // Update the record
+    const updateQuery = `
+      UPDATE records SET 
+        date = ?, duration = ?, departmentId = ?, title = ?, participants = ?,
+        importFromAI = ?, videoLink = ?, textRecord = ?, outline = ?, remark = ?,
+        financialPeriodId = ?, accessLevel = ?, allowedDepartments = ?, allowedUsers = ?,
+        updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `;
+    
+    await pool.execute(updateQuery, [
+      date,
+      duration,
+      departmentId,
+      title,
+      JSON.stringify(participants || []),
+      importFromAI || false,
+      videoLink || '',
+      textRecord || '',
+      outline || '',
+      remark || '',
+      financialPeriodId,
+      accessLevel,
+      JSON.stringify(allowedDepartments || []),
+      JSON.stringify(allowedUsers || []),
+      id
+    ]);
+    
+    // Update tags
+    if (tags !== undefined) {
+      // Remove existing tags
+      await pool.execute('DELETE FROM record_tags WHERE recordId = ?', [id]);
+      
+      // Add new tags
+      if (Array.isArray(tags) && tags.length > 0) {
+        const tagInserts = tags.map(tagId => [id, tagId]);
+        await pool.execute(
+          `INSERT INTO record_tags (recordId, tagId) VALUES ${tags.map(() => '(?, ?)').join(', ')}`,
+          tagInserts.flat()
+        );
+      }
+    }
+    
+    // Log the change
+    await pool.execute(
+      `INSERT INTO record_changes (recordId, changedBy, changeType, changeDescription) VALUES (?, ?, ?, ?)`,
+      [id, userId, 'UPDATE', `Updated record: ${title}`]
+    );
+    
+    res.json({ message: 'Record updated successfully' });
+    
   } catch (error) {
-    console.error(`Error updating record ${req.params.id}:`, error);
-    res.status(500).json({ error: 'Failed to update record' });
+    console.error('Error updating record:', error);
+    res.status(500).json({ error: 'Failed to update record', details: error.message });
   }
 };
 
 // Delete record
-exports.deleteRecord = async (req, res) => {
+const deleteRecord = async (req, res) => {
   try {
-    const recordId = req.params.id;
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userInfo = req.user;
     
-    // Check if record exists
-    const [records] = await db.query('SELECT * FROM records WHERE id = ?', [recordId]);
+    // Check if user has permission to delete this record
+    const checkQuery = `
+      SELECT title FROM records 
+      WHERE id = ? AND (createdBy = ? OR ? = true)
+    `;
     
-    if (records.length === 0) {
-      return res.status(404).json({ error: 'Record not found' });
+    const [existingRecords] = await pool.execute(checkQuery, [id, userId, userInfo.isAdmin]);
+    
+    if (existingRecords.length === 0) {
+      return res.status(403).json({ error: 'Permission denied to delete this record' });
     }
     
-    // Only admins can delete records
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ error: 'Unauthorized to delete records' });
-    }
+    const title = existingRecords[0].title;
     
-    const recordTitle = records[0].title;
-    
-    // Delete activity logs associated with this record first to maintain referential integrity
-    await db.query('DELETE FROM activity_logs WHERE recordId = ?', [recordId]);
-    
-    // Now delete the record
-    await db.query('DELETE FROM records WHERE id = ?', [recordId]);
-    
-    // Log record deletion (note: recordId is null since it's deleted)
-    await logActivity(
-      req.user.userId, 
-      'DELETE_RECORD', 
-      `Deleted record: ${recordTitle}`
+    // Log the deletion before actually deleting
+    await pool.execute(
+      `INSERT INTO record_changes (recordId, changedBy, changeType, changeDescription) VALUES (?, ?, ?, ?)`,
+      [id, userId, 'DELETE', `Deleted record: ${title}`]
     );
     
+    // Delete the record (this will cascade delete tags and changes due to foreign key constraints)
+    await pool.execute('DELETE FROM records WHERE id = ?', [id]);
+    
     res.json({ message: 'Record deleted successfully' });
+    
   } catch (error) {
-    console.error(`Error deleting record ${req.params.id}:`, error);
-    res.status(500).json({ error: 'Failed to delete record' });
+    console.error('Error deleting record:', error);
+    res.status(500).json({ error: 'Failed to delete record', details: error.message });
   }
 };
 
-module.exports.getRecordChanges = exports.getRecordChanges;
+module.exports = {
+  getAllRecords,
+  getRecordById,
+  getRecordChanges,
+  createRecord,
+  updateRecord,
+  deleteRecord
+};

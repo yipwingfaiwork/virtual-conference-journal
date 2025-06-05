@@ -30,13 +30,28 @@ relax-hotel-system/
 
 2. Import the SQL schema:
    - Use the Azure Cloud Shell or MySQL Workbench to connect to your database
-   - Import the SQL schema from `backend/db-schema.sql`
-   - This will create the required tables and sample data:
-     - Two sample users:
-       - Admin user: admin@example.com / admin123
-       - Regular user: user@example.com / user123
-     - Sample meeting records
-     - Sample activity logs
+   - **IMPORTANT**: Execute the SQL schema from `backend/db-schema.sql` line by line or in sections to avoid foreign key constraint errors
+   - This will create the required normalized tables:
+     - `departments` - Department information
+     - `access_levels` - User permission levels
+     - `tags` - Meeting classification tags
+     - `financial_periods` - Financial reporting periods
+     - `users` - Enhanced user table with department and access level relationships
+     - `records` - Enhanced meeting records with access control
+     - `record_tags` - Many-to-many relationship between records and tags
+     - `record_changes` - Change history tracking
+     - `activity_logs` - System activity logging
+   - Sample data includes:
+     - Four sample users with different access levels
+     - Sample meeting records with tags
+     - Default departments, access levels, tags, and financial periods
+
+3. Database Features:
+   - **Normalized Design**: All tables follow 1NF, 2NF, and 3NF principles
+   - **Access Control**: Records have access levels (PUBLIC, DEPARTMENT, RESTRICTED, CONFIDENTIAL)
+   - **Change Tracking**: All record modifications are logged with timestamps
+   - **Tag System**: Flexible tagging system for meeting classification
+   - **Department Isolation**: Users can only access records from their department unless explicitly granted access
 
 ## Step 2: Backend Setup
 
@@ -67,6 +82,12 @@ relax-hotel-system/
    npm run dev
    ```
 
+### New API Endpoints Added
+- `/api/tags` - Tag management for meeting classification
+- `/api/financial-periods` - Financial period management
+- `/api/users` - Enhanced user management with department and access level support
+- `/api/records/:id/changes` - Record change history
+
 ### Azure Deployment
 1. Create an Azure Web App for the backend:
    - Log in to the Azure Portal
@@ -78,10 +99,7 @@ relax-hotel-system/
    - Add all the environment variables from your .env file
 
 3. GitHub Actions deployment is configured in `.github/workflows/main_n8n-api.yml`
-   - Make sure the correct Azure credentials are configured in GitHub repository secrets:
-     - `AZUREAPPSERVICE_CLIENTID_EC26A69020B34E23941C2C5CEA7C131D`
-     - `AZUREAPPSERVICE_TENANTID_688ED3F6659A452F8CCA8F4F7A22260D`
-     - `AZUREAPPSERVICE_SUBSCRIPTIONID_E31BC13E1922418DAA472D43596C6654`
+   - Make sure the correct Azure credentials are configured in GitHub repository secrets
 
 ## Step 3: Frontend Setup
 
@@ -107,6 +125,14 @@ relax-hotel-system/
    npm run dev
    ```
 
+### New Frontend Features Added
+- **Enhanced Search**: Multi-criteria filtering by date, title, keywords, creator, tags, and financial periods
+- **Calendar View**: Interactive calendar display of meeting records
+- **Change History**: View complete change history for each record
+- **Tag System**: Visual tag management and filtering
+- **Access Control**: Permission-based record visibility
+- **Department Filtering**: Department-based record access control
+
 ### Azure Deployment
 1. For frontend deployment, we're using Azure Static Web Apps:
    - Configured in `.github/workflows/azure-static-web-apps-lemon-moss-03941a703.yml`
@@ -127,11 +153,13 @@ For Vite-based applications:
 - The Azure Static Web App workflow should have `output_location` set to `dist`
 - The build command is `npm run build` which runs Vite's build process
 
-## Database Schema
+## Enhanced Database Schema
 
-The application uses the following main tables:
+The application now uses a fully normalized database structure:
 
-### Users Table
+### Key Tables and Relationships
+
+#### Users Table (Enhanced)
 ```sql
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -140,97 +168,127 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   phone VARCHAR(100),
   address TEXT,
-  department VARCHAR(100),
-  accessLevel INT DEFAULT 1,
+  departmentId INT,
+  accessLevelId INT DEFAULT 1,
   isAdmin BOOLEAN DEFAULT false,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  isActive BOOLEAN DEFAULT true,
+  FOREIGN KEY (departmentId) REFERENCES departments(id),
+  FOREIGN KEY (accessLevelId) REFERENCES access_levels(id)
 );
 ```
 
-### Records Table (Meeting Records)
+#### Records Table (Enhanced)
 ```sql
 CREATE TABLE records (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  date VARCHAR(255) NOT NULL,
+  date DATETIME NOT NULL,
   duration VARCHAR(100) NOT NULL,
-  department VARCHAR(100) NOT NULL,
+  departmentId INT,
   title VARCHAR(255) NOT NULL,
   participants JSON,
+  importFromAI BOOLEAN DEFAULT false,
   videoLink TEXT,
   textRecord TEXT,
   outline TEXT,
+  remark TEXT,
   createdBy INT,
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL
+  financialPeriodId INT,
+  accessLevel ENUM('PUBLIC', 'DEPARTMENT', 'RESTRICTED', 'CONFIDENTIAL') DEFAULT 'DEPARTMENT',
+  allowedDepartments JSON,
+  allowedUsers JSON,
+  isConfidential BOOLEAN DEFAULT false,
+  FOREIGN KEY (createdBy) REFERENCES users(id),
+  FOREIGN KEY (departmentId) REFERENCES departments(id),
+  FOREIGN KEY (financialPeriodId) REFERENCES financial_periods(id)
 );
 ```
 
-### Activity Logs Table
-```sql
-CREATE TABLE activity_logs (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  userId INT,
-  action VARCHAR(255) NOT NULL,
-  details TEXT,
-  recordId INT,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (recordId) REFERENCES records(id) ON DELETE SET NULL
-);
-```
+#### New Supporting Tables
+- **departments**: Normalized department information
+- **access_levels**: User permission levels with JSON permissions
+- **tags**: Meeting classification tags with colors
+- **financial_periods**: Financial reporting periods
+- **record_tags**: Many-to-many relationship between records and tags
+- **record_changes**: Complete change history tracking
+- **activity_logs**: Enhanced system activity logging
 
 ## Feature Overview
 
-The application provides the following features:
+The application now provides these enhanced features:
 
 ### All Users
-- Login and authentication
-- View dashboard with recent records and statistics
-- View, create and update meeting records
-- Search and filter meeting records
-- Profile management and password updates
+- Login and authentication with department and access level validation
+- Enhanced dashboard with department-specific statistics
+- Advanced search and filtering capabilities
+- Calendar view of meeting records
+- Tag-based record organization
+- Access to records based on department and permission level
+
+### Enhanced Search and Filtering
+- **Text Search**: Search by title, content, and keywords
+- **Date Range**: Filter by specific date ranges
+- **Department**: Filter by department (respecting access permissions)
+- **Tags**: Multi-tag filtering with visual tag selection
+- **Creator**: Filter by record creator
+- **Financial Period**: Filter by financial reporting periods
+- **Access Level**: Filter by record access level
+
+### Access Control System
+- **Department-based Access**: Users can only see records from their department by default
+- **Access Level Control**: Four levels (Basic, Supervisor, Manager, Admin) with different permissions
+- **Record-level Security**: Individual records can have PUBLIC, DEPARTMENT, RESTRICTED, or CONFIDENTIAL access
+- **Cross-department Access**: Records can be explicitly shared with other departments
+- **User-specific Access**: Records can be shared with specific users
 
 ### Administrators
 - All standard user features
-- Delete meeting records
-- View activity logs of all users
-- User management (coming soon)
-- System settings (coming soon)
+- Full system access regardless of department restrictions
+- User management capabilities
+- System activity monitoring
+- Access to all records and change history
 
 ## Troubleshooting Azure Deployments
 
-1. **Backend Deployment Issues:**
-   - Check Application Logs in the Azure Portal
-   - Review GitHub Actions workflow runs for any failures
-   - Verify all environment variables are properly configured
-   - Check Application Insights for runtime errors
-   - Ensure Azure service principal credentials in GitHub secrets are correct
-   - Verify the tenant ID is correct and exists in your Azure subscription
+1. **Database Setup Issues:**
+   - Execute the SQL schema in sections to avoid constraint errors
+   - Ensure all tables are created before running the sample data inserts
+   - Verify foreign key relationships are properly established
+   - Check that indexes are created for optimal performance
 
-2. **Frontend Deployment Issues:**
-   - Check the GitHub Actions workflow run status
-   - Verify that the `output_location` in the workflow file is set to `dist` (Vite's default)
-   - Check browser console for CORS or API connection issues
-   - Review build logs in GitHub Actions for any compilation errors
+2. **Backend Deployment Issues:**
+   - Verify all new route files are properly deployed
+   - Check that database connection supports the new table structure
+   - Ensure environment variables include all required database credentials
+   - Test API endpoints individually: `/api/tags`, `/api/financial-periods`, `/api/users`
 
-3. **Database Connection Issues:**
-   - Verify firewall rules allow connections from Azure services
-   - Check connection string parameters in application settings
-   - Test connection with a database client
+3. **Frontend Deployment Issues:**
+   - Verify that the enhanced search component dependencies are installed
+   - Check that all new TypeScript interfaces are properly defined
+   - Test calendar view functionality
+   - Verify tag filtering and visual components work correctly
 
-4. **CORS Issues:**
-   - Ensure the backend server has CORS configured to allow requests from the frontend domain
-   - Update CORS configuration in the backend middleware
-
-5. **Authentication Issues:**
-   - Ensure JWT_SECRET is properly configured
-   - Verify tokens are being properly sent and verified
+4. **Permission and Access Issues:**
+   - Verify user department and access level assignments in the database
+   - Test record visibility based on access levels
+   - Check that department filtering works correctly
+   - Verify that change history tracking is functioning
 
 ## Security Considerations for Production
 
-1. Use Azure Key Vault to store sensitive credentials and secrets
-2. Implement Azure Active Directory authentication for added security
-3. Use HTTPS for all traffic (provided by default with Azure Web Apps)
-4. Set up Azure Web Application Firewall policies
-5. Configure regular database backups
+1. **Enhanced Database Security:**
+   - Use Azure Key Vault for database credentials
+   - Implement row-level security policies
+   - Set up regular automated backups
+   - Monitor access patterns for unusual activity
+
+2. **Access Control Security:**
+   - Regularly audit user access levels and department assignments
+   - Implement session timeout for sensitive access levels
+   - Log all access attempts to confidential records
+   - Set up alerts for unauthorized access attempts
+
+3. **Data Protection:**
+   - Encrypt sensitive record content at rest
+   - Implement data retention policies for change history
+   - Set up automated cleanup for old activity logs
+   - Ensure GDPR compliance for user data handling

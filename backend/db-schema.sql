@@ -49,22 +49,32 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(255) NOT NULL,
   phone VARCHAR(100),
   address TEXT,
+  department VARCHAR(100), -- Keep old column for migration
   departmentId INT,
+  accessLevel INT DEFAULT 1, -- Keep old column for migration
   accessLevelId INT DEFAULT 1,
   isAdmin BOOLEAN DEFAULT false,
   isActive BOOLEAN DEFAULT true,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL,
-  FOREIGN KEY (accessLevelId) REFERENCES access_levels(id) ON DELETE SET NULL
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- Add foreign key constraints after table creation
+ALTER TABLE users 
+ADD CONSTRAINT fk_users_department 
+FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+
+ALTER TABLE users 
+ADD CONSTRAINT fk_users_access_level 
+FOREIGN KEY (accessLevelId) REFERENCES access_levels(id) ON DELETE SET NULL;
 
 -- Enhanced Records table with access control
 CREATE TABLE IF NOT EXISTS records (
   id INT AUTO_INCREMENT PRIMARY KEY,
   date DATETIME NOT NULL,
   duration VARCHAR(100) NOT NULL,
-  departmentId INT NOT NULL,
+  department VARCHAR(100), -- Keep old column for migration
+  departmentId INT,
   title VARCHAR(255) NOT NULL,
   participants JSON,
   importFromAI BOOLEAN DEFAULT false,
@@ -79,11 +89,21 @@ CREATE TABLE IF NOT EXISTS records (
   allowedUsers JSON, -- For specific user access
   isConfidential BOOLEAN DEFAULT false,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (departmentId) REFERENCES departments(id),
-  FOREIGN KEY (financialPeriodId) REFERENCES financial_periods(id) ON DELETE SET NULL
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- Add foreign key constraints for records
+ALTER TABLE records 
+ADD CONSTRAINT fk_records_created_by 
+FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE records 
+ADD CONSTRAINT fk_records_department 
+FOREIGN KEY (departmentId) REFERENCES departments(id) ON DELETE SET NULL;
+
+ALTER TABLE records 
+ADD CONSTRAINT fk_records_financial_period 
+FOREIGN KEY (financialPeriodId) REFERENCES financial_periods(id) ON DELETE SET NULL;
 
 -- Record tags junction table (many-to-many)
 CREATE TABLE IF NOT EXISTS record_tags (
@@ -157,30 +177,52 @@ INSERT IGNORE INTO financial_periods (name, startDate, endDate, isActive) VALUES
 ('Q4 2024', '2024-10-01', '2024-12-31', true),
 ('Q1 2025', '2025-01-01', '2025-03-31', true);
 
--- Update existing users to use new structure
+-- Sample users (password is hashed version of 'password123')
+INSERT IGNORE INTO users (name, email, password, phone, address, department, departmentId, accessLevel, accessLevelId, isAdmin) VALUES 
+('Admin User', 'admin@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7890', '123 Admin St', 'Management', 1, 4, 4, true),
+('John Manager', 'john@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7891', '124 Manager Ave', 'Operations', 2, 3, 3, false),
+('Jane Supervisor', 'jane@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7892', '125 Supervisor Blvd', 'Finance', 3, 2, 2, false),
+('Bob User', 'bob@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7893', '126 User Lane', 'Administration', 4, 1, 1, false);
+
+-- Update existing users to use new structure (only if columns exist)
 UPDATE users u 
 LEFT JOIN departments d ON d.name = u.department 
 SET u.departmentId = d.id 
-WHERE d.id IS NOT NULL;
+WHERE d.id IS NOT NULL AND u.department IS NOT NULL;
 
 UPDATE users u 
 LEFT JOIN access_levels al ON al.level = u.accessLevel 
 SET u.accessLevelId = al.id 
-WHERE al.id IS NOT NULL;
+WHERE al.id IS NOT NULL AND u.accessLevel IS NOT NULL;
 
--- Update existing records to use new structure
+-- Update existing records to use new structure (only if columns exist)
 UPDATE records r 
 LEFT JOIN departments d ON d.name = r.department 
 SET r.departmentId = d.id 
-WHERE d.id IS NOT NULL;
+WHERE d.id IS NOT NULL AND r.department IS NOT NULL;
+
+-- Sample records
+INSERT IGNORE INTO records (date, duration, department, departmentId, title, participants, importFromAI, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, accessLevel) VALUES 
+('2024-12-01 10:00:00', '2 hours', 'Management', 1, 'Q4 Strategic Planning', '["Admin User", "John Manager"]', false, 'https://example.com/video1', 'Strategic planning meeting discussing Q4 objectives and 2025 roadmap.', '1. Review Q4 performance\n2. Set 2025 goals\n3. Budget allocation', 'Follow up on action items next week', 1, 4, 'DEPARTMENT'),
+('2024-12-02 14:00:00', '1.5 hours', 'Operations', 2, 'Daily Operations Review', '["John Manager", "Jane Supervisor"]', true, '', 'Daily review of operational metrics and team performance.', '1. Review metrics\n2. Address issues\n3. Plan improvements', '', 2, 4, 'PUBLIC'),
+('2024-12-03 09:00:00', '45 minutes', 'Finance', 3, 'Budget Meeting', '["Jane Supervisor", "Admin User"]', false, '', 'Quarterly budget review and financial planning.', '1. Review expenses\n2. Budget projections\n3. Cost optimization', 'Confidential budget information', 3, 4, 'RESTRICTED');
+
+-- Link sample records to tags
+INSERT IGNORE INTO record_tags (recordId, tagId) VALUES 
+(1, 6), -- Strategic planning -> strategy
+(2, 3), -- Daily review -> daily-report
+(2, 8), -- Daily review -> routine
+(3, 4); -- Budget meeting -> budget
 
 -- Create indexes for better performance
-CREATE INDEX idx_records_date ON records(date);
-CREATE INDEX idx_records_department ON records(departmentId);
-CREATE INDEX idx_records_access_level ON records(accessLevel);
-CREATE INDEX idx_records_created_by ON records(createdBy);
-CREATE INDEX idx_record_tags_record ON record_tags(recordId);
-CREATE INDEX idx_record_tags_tag ON record_tags(tagId);
-CREATE INDEX idx_record_changes_record ON record_changes(recordId);
-CREATE INDEX idx_activity_logs_user ON activity_logs(userId);
-CREATE INDEX idx_activity_logs_record ON activity_logs(recordId);
+CREATE INDEX IF NOT EXISTS idx_records_date ON records(date);
+CREATE INDEX IF NOT EXISTS idx_records_department ON records(departmentId);
+CREATE INDEX IF NOT EXISTS idx_records_access_level ON records(accessLevel);
+CREATE INDEX IF NOT EXISTS idx_records_created_by ON records(createdBy);
+CREATE INDEX IF NOT EXISTS idx_record_tags_record ON record_tags(recordId);
+CREATE INDEX IF NOT EXISTS idx_record_tags_tag ON record_tags(tagId);
+CREATE INDEX IF NOT EXISTS idx_record_changes_record ON record_changes(recordId);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(userId);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_record ON activity_logs(recordId);
+CREATE INDEX IF NOT EXISTS idx_users_department ON users(departmentId);
+CREATE INDEX IF NOT EXISTS idx_users_access_level ON users(accessLevelId);
