@@ -119,12 +119,12 @@ INSERT IGNORE INTO financial_periods (name, startDate, endDate, isActive) VALUES
 ('Q4 2024', '2024-10-01', '2024-12-31', false),
 ('Q1 2025', '2025-01-01', '2025-03-31', true);
 
--- Sample users (password is hashed version of 'password123')
+-- Sample users (password is hashed version of 'pw1234')
 INSERT IGNORE INTO users (name, email, password, phone, address, departmentId, isAdmin) VALUES 
-('Admin User', 'admin@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7890', '123 Admin St', 1, true),
-('John Manager', 'john@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7891', '124 Manager Ave', 2, false),
-('Jane Supervisor', 'jane@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7892', '125 Supervisor Blvd', 3, false),
-('Bob User', 'bob@example.com', '$2b$10$rOZhzKJ8K8K8K8K8K8K8Ku', '123-456-7893', '126 User Lane', 4, false);
+('Admin User', 'admin@example.com', '$2a$12$Ju7vjk4.0c3bsrXnb.XvBuVnrop4oBI10wGMwGaqS2E8u9O6bEICS', '123-456-7890', '123 Admin St', 1, true),
+('John Manager', 'user2@example.com', '$2a$12$Ju7vjk4.0c3bsrXnb.XvBuVnrop4oBI10wGMwGaqS2E8u9O6bEICS', '123-456-7891', '124 Manager Ave', 2, false),
+('Jane Supervisor', 'user3@example.com', '$2a$12$Ju7vjk4.0c3bsrXnb.XvBuVnrop4oBI10wGMwGaqS2E8u9O6bEICS', '123-456-7892', '125 Supervisor Blvd', 3, false),
+('Bob User', 'user4@example.com', '$2a$12$Ju7vjk4.0c3bsrXnb.XvBuVnrop4oBI10wGMwGaqS2E8u9O6bEICS', '123-456-7893', '126 User Lane', 4, false);
 
 -- Sample records
 INSERT IGNORE INTO records (date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential) VALUES 
