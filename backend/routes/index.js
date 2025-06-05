@@ -9,6 +9,7 @@ const userRoutes = require('./users');
 const activityLogRoutes = require('./activity-logs');
 const tagRoutes = require('./tags');
 const financialPeriodRoutes = require('./financial-periods');
+const departmentRoutes = require('./departments');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -17,6 +18,7 @@ router.use('/users', userRoutes);
 router.use('/activity-logs', activityLogRoutes);
 router.use('/tags', tagRoutes);
 router.use('/financial-periods', financialPeriodRoutes);
+router.use('/departments', departmentRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

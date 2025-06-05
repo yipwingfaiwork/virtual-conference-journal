@@ -34,15 +34,14 @@ const getAllRecords = async (req, res) => {
     const conditions = [];
     const params = [];
     
-    // Access control based on user permissions
+    // Simplified access control - admin can see all, others based on public/confidential flags
     if (!userInfo.isAdmin) {
       conditions.push(`(
-        r.accessLevel = 'PUBLIC' OR 
-        (r.accessLevel = 'DEPARTMENT' AND r.departmentId = ?) OR
-        (r.accessLevel = 'RESTRICTED' AND (r.createdBy = ? OR JSON_CONTAINS(r.allowedUsers, ?))) OR
-        (r.accessLevel = 'CONFIDENTIAL' AND r.createdBy = ?)
+        r.isPublic = true OR 
+        (r.isPublic = false AND r.isConfidential = false AND r.departmentId = ?) OR
+        r.createdBy = ?
       )`);
-      params.push(userInfo.departmentId, userId, `"${userId}"`, userId);
+      params.push(userInfo.departmentId, userId);
     }
     
     // Search term filter
@@ -81,12 +80,6 @@ const getAllRecords = async (req, res) => {
       params.push(req.query.createdBy);
     }
     
-    // Access level filter
-    if (req.query.accessLevel) {
-      conditions.push(`r.accessLevel = ?`);
-      params.push(req.query.accessLevel);
-    }
-    
     // Add WHERE clause if there are conditions
     if (conditions.length > 0) {
       baseQuery += ` WHERE ${conditions.join(' AND ')}`;
@@ -100,16 +93,18 @@ const getAllRecords = async (req, res) => {
     
     const [rows] = await pool.execute(baseQuery, params);
     
-    // Process the results to clean up tags
+    // Process the results to clean up tags and add computed fields
     const processedRows = rows.map(row => ({
       ...row,
       tags: row.tags ? row.tags.filter(tag => tag !== null) : [],
       participants: row.participants ? JSON.parse(row.participants) : [],
-      allowedDepartments: row.allowedDepartments ? JSON.parse(row.allowedDepartments) : [],
-      allowedUsers: row.allowedUsers ? JSON.parse(row.allowedUsers) : []
+      // Map the simplified access control to the expected frontend format
+      accessLevel: row.isPublic ? 'PUBLIC' : (row.isConfidential ? 'CONFIDENTIAL' : 'DEPARTMENT'),
+      allowedDepartments: [],
+      allowedUsers: []
     }));
     
-    // Apply tag filter after processing (since we need to check the actual tag IDs)
+    // Apply tag filter after processing
     let filteredRows = processedRows;
     if (req.query.tags && Array.isArray(req.query.tags) && req.query.tags.length > 0) {
       filteredRows = processedRows.filter(record => {
@@ -158,15 +153,14 @@ const getRecordById = async (req, res) => {
     
     const params = [id];
     
-    // Add access control for non-admin users
+    // Simplified access control for single record
     if (!userInfo.isAdmin) {
       query += ` AND (
-        r.accessLevel = 'PUBLIC' OR 
-        (r.accessLevel = 'DEPARTMENT' AND r.departmentId = ?) OR
-        (r.accessLevel = 'RESTRICTED' AND (r.createdBy = ? OR JSON_CONTAINS(r.allowedUsers, ?))) OR
-        (r.accessLevel = 'CONFIDENTIAL' AND r.createdBy = ?)
+        r.isPublic = true OR 
+        (r.isPublic = false AND r.isConfidential = false AND r.departmentId = ?) OR
+        r.createdBy = ?
       )`;
-      params.push(userInfo.departmentId, userId, `"${userId}"`, userId);
+      params.push(userInfo.departmentId, userId);
     }
     
     query += ` GROUP BY r.id`;
@@ -181,8 +175,10 @@ const getRecordById = async (req, res) => {
       ...rows[0],
       tags: rows[0].tags ? rows[0].tags.filter(tag => tag !== null) : [],
       participants: rows[0].participants ? JSON.parse(rows[0].participants) : [],
-      allowedDepartments: rows[0].allowedDepartments ? JSON.parse(rows[0].allowedDepartments) : [],
-      allowedUsers: rows[0].allowedUsers ? JSON.parse(rows[0].allowedUsers) : []
+      // Map simplified access control to frontend format
+      accessLevel: rows[0].isPublic ? 'PUBLIC' : (rows[0].isConfidential ? 'CONFIDENTIAL' : 'DEPARTMENT'),
+      allowedDepartments: [],
+      allowedUsers: []
     };
     
     res.json(record);
@@ -193,23 +189,38 @@ const getRecordById = async (req, res) => {
   }
 };
 
-// Get record changes/history
+// Get record changes/history - simplified since we removed record_changes table
 const getRecordChanges = async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Since we removed record_changes table, get activity logs instead
     const query = `
       SELECT 
-        rc.*,
+        al.*,
         u.name as changedByName
-      FROM record_changes rc
-      LEFT JOIN users u ON rc.changedBy = u.id
-      WHERE rc.recordId = ?
-      ORDER BY rc.createdAt DESC
+      FROM activity_logs al
+      LEFT JOIN users u ON al.userId = u.id
+      WHERE al.recordId = ?
+      ORDER BY al.timestamp DESC
     `;
     
     const [rows] = await pool.execute(query, [id]);
-    res.json(rows);
+    
+    // Map activity logs to change format expected by frontend
+    const changes = rows.map(row => ({
+      id: row.id,
+      recordId: row.recordId,
+      changedBy: row.userId,
+      changedByName: row.changedByName || 'Unknown',
+      changeType: row.action.includes('CREATE') ? 'CREATE' : 
+                  row.action.includes('UPDATE') ? 'UPDATE' : 
+                  row.action.includes('DELETE') ? 'DELETE' : 'UPDATE',
+      changeDescription: row.details,
+      createdAt: row.timestamp
+    }));
+    
+    res.json(changes);
     
   } catch (error) {
     console.error('Error fetching record changes:', error);
@@ -229,25 +240,26 @@ const createRecord = async (req, res) => {
       departmentId,
       title,
       participants,
-      importFromAI,
       videoLink,
       textRecord,
       outline,
       remark,
       financialPeriodId,
       accessLevel,
-      allowedDepartments,
-      allowedUsers,
       tags
     } = req.body;
     
-    // Insert the record
+    // Map frontend accessLevel to simplified database fields
+    const isPublic = accessLevel === 'PUBLIC';
+    const isConfidential = accessLevel === 'CONFIDENTIAL';
+    
+    // Insert the record with simplified access control
     const insertQuery = `
       INSERT INTO records (
-        date, duration, departmentId, title, participants, importFromAI,
+        date, duration, departmentId, title, participants,
         videoLink, textRecord, outline, remark, createdBy, financialPeriodId,
-        accessLevel, allowedDepartments, allowedUsers
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        isPublic, isConfidential
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const [result] = await pool.execute(insertQuery, [
@@ -256,16 +268,14 @@ const createRecord = async (req, res) => {
       departmentId || userInfo.departmentId,
       title,
       JSON.stringify(participants || []),
-      importFromAI || false,
       videoLink || '',
       textRecord || '',
       outline || '',
       remark || '',
       userId,
       financialPeriodId,
-      accessLevel || 'DEPARTMENT',
-      JSON.stringify(allowedDepartments || []),
-      JSON.stringify(allowedUsers || [])
+      isPublic,
+      isConfidential
     ]);
     
     const recordId = result.insertId;
@@ -279,10 +289,10 @@ const createRecord = async (req, res) => {
       );
     }
     
-    // Log the change
+    // Log the activity
     await pool.execute(
-      `INSERT INTO record_changes (recordId, changedBy, changeType, changeDescription) VALUES (?, ?, ?, ?)`,
-      [recordId, userId, 'CREATE', `Created new record: ${title}`]
+      `INSERT INTO activity_logs (userId, action, details, recordId) VALUES (?, ?, ?, ?)`,
+      [userId, 'CREATE_RECORD', `Created new record: ${title}`, recordId]
     );
     
     res.status(201).json({ id: recordId, message: 'Record created successfully' });
@@ -300,7 +310,7 @@ const updateRecord = async (req, res) => {
     const userId = req.user.id;
     const userInfo = req.user;
     
-    // First check if user has permission to update this record
+    // Check if user has permission to update this record
     const checkQuery = `
       SELECT * FROM records 
       WHERE id = ? AND (createdBy = ? OR ? = true)
@@ -312,32 +322,31 @@ const updateRecord = async (req, res) => {
       return res.status(403).json({ error: 'Permission denied to update this record' });
     }
     
-    const existingRecord = existingRecords[0];
-    
     const {
       date,
       duration,
       departmentId,
       title,
       participants,
-      importFromAI,
       videoLink,
       textRecord,
       outline,
       remark,
       financialPeriodId,
       accessLevel,
-      allowedDepartments,
-      allowedUsers,
       tags
     } = req.body;
+    
+    // Map frontend accessLevel to simplified database fields
+    const isPublic = accessLevel === 'PUBLIC';
+    const isConfidential = accessLevel === 'CONFIDENTIAL';
     
     // Update the record
     const updateQuery = `
       UPDATE records SET 
         date = ?, duration = ?, departmentId = ?, title = ?, participants = ?,
-        importFromAI = ?, videoLink = ?, textRecord = ?, outline = ?, remark = ?,
-        financialPeriodId = ?, accessLevel = ?, allowedDepartments = ?, allowedUsers = ?,
+        videoLink = ?, textRecord = ?, outline = ?, remark = ?,
+        financialPeriodId = ?, isPublic = ?, isConfidential = ?,
         updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
@@ -348,15 +357,13 @@ const updateRecord = async (req, res) => {
       departmentId,
       title,
       JSON.stringify(participants || []),
-      importFromAI || false,
       videoLink || '',
       textRecord || '',
       outline || '',
       remark || '',
       financialPeriodId,
-      accessLevel,
-      JSON.stringify(allowedDepartments || []),
-      JSON.stringify(allowedUsers || []),
+      isPublic,
+      isConfidential,
       id
     ]);
     
@@ -375,10 +382,10 @@ const updateRecord = async (req, res) => {
       }
     }
     
-    // Log the change
+    // Log the activity
     await pool.execute(
-      `INSERT INTO record_changes (recordId, changedBy, changeType, changeDescription) VALUES (?, ?, ?, ?)`,
-      [id, userId, 'UPDATE', `Updated record: ${title}`]
+      `INSERT INTO activity_logs (userId, action, details, recordId) VALUES (?, ?, ?, ?)`,
+      [userId, 'UPDATE_RECORD', `Updated record: ${title}`, id]
     );
     
     res.json({ message: 'Record updated successfully' });
@@ -412,11 +419,11 @@ const deleteRecord = async (req, res) => {
     
     // Log the deletion before actually deleting
     await pool.execute(
-      `INSERT INTO record_changes (recordId, changedBy, changeType, changeDescription) VALUES (?, ?, ?, ?)`,
-      [id, userId, 'DELETE', `Deleted record: ${title}`]
+      `INSERT INTO activity_logs (userId, action, details, recordId) VALUES (?, ?, ?, ?)`,
+      [userId, 'DELETE_RECORD', `Deleted record: ${title}`, id]
     );
     
-    // Delete the record (this will cascade delete tags and changes due to foreign key constraints)
+    // Delete the record (this will cascade delete tags due to foreign key constraints)
     await pool.execute('DELETE FROM records WHERE id = ?', [id]);
     
     res.json({ message: 'Record deleted successfully' });

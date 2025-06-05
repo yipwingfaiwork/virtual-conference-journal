@@ -7,8 +7,6 @@ export interface User {
   address: string;
   department: string;
   departmentId: string;
-  accessLevel: 1 | 2 | 3 | 4;
-  accessLevelId: string;
   isAdmin: boolean;
   isActive: boolean;
   createdAt: string;
@@ -19,19 +17,6 @@ export interface Department {
   id: string;
   name: string;
   description: string;
-  createdAt: string;
-}
-
-export interface AccessLevel {
-  id: string;
-  level: number;
-  name: string;
-  description: string;
-  permissions: {
-    read: string[];
-    write: string[] | boolean;
-    delete: string[] | boolean;
-  };
   createdAt: string;
 }
 
@@ -60,17 +45,19 @@ export interface ConferenceRecord {
   departmentId: string;
   title: string;
   participants: string[];
-  importFromAI: boolean;
   videoLink: string;
   textRecord: string;
   outline: string;
   remark: string;
   createdBy: string;
   financialPeriodId?: string;
-  accessLevel: 'PUBLIC' | 'DEPARTMENT' | 'RESTRICTED' | 'CONFIDENTIAL';
+  // Simplified access control
+  isPublic: boolean;
+  isConfidential: boolean;
+  // These are computed fields for frontend compatibility
+  accessLevel: 'PUBLIC' | 'DEPARTMENT' | 'CONFIDENTIAL';
   allowedDepartments?: string[];
   allowedUsers?: string[];
-  isConfidential: boolean;
   tags: Tag[];
   createdAt: string;
   updatedAt: string;
@@ -95,8 +82,6 @@ export type ActivityLog = {
   action: string;
   details: string;
   recordId?: string;
-  ipAddress?: string;
-  userAgent?: string;
   timestamp: string;
 };
 
