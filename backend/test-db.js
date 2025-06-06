@@ -16,7 +16,7 @@ async function testConnection() {
     if (!process.env.DB_HOST || !process.env.DB_PASSWORD) {
       throw new Error('Missing required environment variables');
     }
-    const certPath = path.join(__dirname, '..', '..', 'certs', 'DigiCertGlobalRootCA.crt.pem');
+    const certPath = path.join(__dirname, '..', 'certs', 'DigiCertGlobalRootCA.crt.pem');
     console.log('Checking SSL cert path:', certPath);
     const caCert = fs.readFileSync(certPath);
     console.log('SSL cert loaded successfully, length:', caCert.length);
