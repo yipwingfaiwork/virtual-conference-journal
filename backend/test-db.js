@@ -5,6 +5,9 @@ async function testConnection() {
   let connection;
   try {
     console.log('Attempting to connect to database...');
+    console.log('SSL cert path:', '/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem');
+    const caCert = require('fs').readFileSync('/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem');
+    console.log('SSL cert loaded successfully');
     connection = await mysql.createConnection({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
@@ -12,7 +15,8 @@ async function testConnection() {
       database: process.env.DB_NAME,
       port: process.env.DB_PORT,
       ssl: {
-        ca: require('fs').readFileSync('/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem')
+        ca: caCert,
+        rejectUnauthorized: true
       }
     });
     console.log('Connection established, testing query...');
