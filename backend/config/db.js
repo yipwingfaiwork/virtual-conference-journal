@@ -1,11 +1,13 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
-const caCertPath = '/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem';
+const certPath = path.join(__dirname, '..', '..', 'certs', 'DigiCertGlobalRootCA.crt.pem');
+console.log('Resolved SSL cert path:', certPath);
 let caCert;
 try {
-  caCert = fs.readFileSync(caCertPath);
+  caCert = fs.readFileSync(certPath);
   console.log('SSL cert loaded successfully in db.js, length:', caCert.length);
 } catch (error) {
   console.error('Failed to load SSL cert in db.js:', {
