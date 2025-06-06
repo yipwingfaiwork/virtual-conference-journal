@@ -11,7 +11,12 @@ async function testConnection() {
       DB_USER: process.env.DB_USER,
       DB_PORT: process.env.DB_PORT
     });
-    const caCert = require('fs').readFileSync('/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem');
+    if (!process.env.DB_HOST || !process.env.DB_PASSWORD) {
+      throw new Error('Missing required environment variables');
+    }
+    const caCertPath = '/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem';
+    console.log('Checking SSL cert path:', caCertPath);
+    const caCert = require('fs').readFileSync(caCertPath);
     console.log('SSL cert loaded successfully, length:', caCert.length);
     connection = await mysql.createConnection({
       host: process.env.DB_HOST,
@@ -22,7 +27,8 @@ async function testConnection() {
       ssl: {
         ca: caCert,
         rejectUnauthorized: true,
-        minVersion: 'TLSv1.2'
+        minVersion: 'TLSv1.2',
+        secureProtocol: 'TLSv1_2_method' // 明確指定 TLS 協議
       }
     });
     console.log('Connection established, testing query...');
