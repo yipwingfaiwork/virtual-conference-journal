@@ -1,5 +1,10 @@
+const express = require('express');
+const setupMiddleware = require('./middleware');
+const setupRoutes = require('./routes');
 const app = express();
-const PORT = process.env.PORT; // 僅使用 Azure 分配的端口
+require('dotenv').config(); // 加載 .env 檔案
+const { testConnection } = require('./test-db'); // 假設 testConnection 在 test-db.js 中
+const PORT = process.env.PORT || 5001; // 預設端口
 
 setupMiddleware(app);
 setupRoutes(app);
