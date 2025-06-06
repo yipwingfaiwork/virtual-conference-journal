@@ -1,83 +1,33 @@
 const mysql = require('mysql2/promise');
-const dotenv = require('dotenv');
-const fs = require('fs'); // 引入 fs 模組
+const fs = require('fs');
+require('dotenv').config();
 
-// Load environment variables
-dotenv.config();
+const caCertPath = '/home/site/wwwroot/certs/DigiCertGlobalRootCA.crt.pem';
+let caCert;
+try {
+  caCert = fs.readFileSync(caCertPath);
+  console.log('SSL cert loaded successfully in db.js, length:', caCert.length);
+} catch (error) {
+  console.error('Failed to load SSL cert in db.js:', {
+    message: error.message,
+    stack: error.stack,
+    code: error.code
+  });
+  throw error;
+}
 
-// Database connection configuration
-const dbConfig = {
-  host: process.env.DB_HOST || 'hoteldb.mysql.database.azure.com',
-  user: process.env.DB_USER || 'dba',
-  password: process.env.DB_PASSWORD || 'Lezykgu1',
-  database: process.env.DB_NAME || 'relax_hotel_system',
-  port: Number(process.env.DB_PORT) || 3306,
-  connectionLimit: 10,
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
   ssl: {
+    ca: caCert,
     rejectUnauthorized: true,
-    ca: fs.readFileSync('./certs/BaltimoreCyberTrustRoot.crt.pem') // 指定證書路徑
+    minVersion: 'TLSv1.2',
+    secureProtocol: 'TLSv1_2_method'
   }
-};
-
-// Create a pool for managing connections
-const pool = mysql.createPool(dbConfig);
-
-// Test database connection
-const testConnection = async () => {
-  try {
-    const connection = await pool.getConnection();
-    console.log('Successfully connected to the database');
-    connection.release();
-    return true;
-  } catch (error) {
-    console.error('Failed to connect to the database:', error);
-    return false;
-  }
-};
+});
 
 module.exports = pool;
-module.exports.testConnection = testConnection;
-
-
-/* AI generate backup 06062025 start//
-const mysql = require('mysql2/promise');
-const dotenv = require('dotenv');
-
-// Load environment variables
-dotenv.config();
-
-// Database connection configuration
-const dbConfig = {
-  host: process.env.DB_HOST || 'hoteldb.mysql.database.azure.com',
-  user: process.env.DB_USER || 'dba',
-  password: process.env.DB_PASSWORD || 'Lezykgu1',
-  database: process.env.DB_NAME || 'relax_hotel_system',
-  port: Number(process.env.DB_PORT) || 3306, // 8889 is MAMP default MySQL port
-  connectionLimit: 10,
-  ssl: {
-    rejectUnauthorized: true,
-    // 下載 Azure MySQL CA 證書：https://docs.microsoft.com/en-us/azure/mysql/howto-configure-ssl
-    // 若需要，指定 CA 證書檔案（本地測試時）
-    // ca: require('fs').readFileSync('/path/to/BaltimoreCyberTrustRoot.crt.pem')
-  }
-};
-
-// Create a pool for managing connections
-const pool = mysql.createPool(dbConfig);
-
-// Test database connection
-const testConnection = async () => {
-  try {
-    const connection = await pool.getConnection();
-    console.log('Successfully connected to the database');
-    connection.release();
-    return true;
-  } catch (error) {
-    console.error('Failed to connect to the database:', error);
-    return false;
-  }
-};
-
-module.exports = pool;
-module.exports.testConnection = testConnection;
-*/ //AI generate backup 06062025 end
