@@ -8,15 +8,7 @@ const app = express();
 
 async function startServer() {
   console.log('Starting server...');
-  console.log('Environment variables:', {
-    DB_HOST: process.env.DB_HOST,
-    DB_NAME: process.env.DB_NAME,
-    DB_USER: process.env.DB_USER,
-    DB_PORT: process.env.DB_PORT,
-    PORT: process.env.PORT
-  });
-
-  console.log('Flushing logs...');
+  console.log('Environment variables:', process.env);
   console.log('Testing database connection...');
   const dbConnected = await testConnection();
   if (!dbConnected) {
@@ -24,8 +16,6 @@ async function startServer() {
     process.exit(1);
   }
   console.log('Database connection successful');
-
-  console.log('Logs flushed');
 
   app.use(cors({ credentials: true, origin: true }));
   app.use(express.json());
