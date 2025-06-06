@@ -1,4 +1,3 @@
-
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
@@ -12,36 +11,9 @@ on:
 
 jobs:
   build:
-
-    
-
-
-
-
-     - name: npm install, build, and test
-  run: |
-    cd backend
-    npm install
-    npm run build --if-present
-    npm run test --if-present
-- name: Check files before zipping
-  run: |
-    cd backend
-    ls -R
-- name: Zip artifact for deployment
-  run: |
-    cd backend
-    zip -r ../release.zip ./*
-
-
-
-
-
-
-  
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -58,6 +30,11 @@ jobs:
           npm run build --if-present
           npm run test --if-present
 
+      - name: Check files before zipping
+        run: |
+          cd backend
+          ls -R
+
       - name: Zip artifact for deployment
         run: |
           cd backend
@@ -70,40 +47,13 @@ jobs:
           path: release.zip
 
   deploy:
-
-
-- name: Unzip artifact for deployment
-  run: unzip release.zip
-- name: Check files after unzip
-  run: ls -R
-- name: Login to Azure
-  uses: azure/login@v2
-  with:
-    creds: ${{ secrets.AZURE_CREDENTIALS }}
-- name: 'Deploy to Azure Web App'
-  id: deploy-to-webapp
-  uses: azure/webapps-deploy@v3
-  with:
-    app-name: 'n8n-api'
-    slot-name: 'Production'
-    package: .
-
-
-
-
-
-
-
-
-
     runs-on: ubuntu-latest
     needs: build
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      #testing new auth id-token: write #This is required for requesting the  JWT
-      contents: read #This is required for actions/checkout
+      contents: read # This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -113,16 +63,15 @@ jobs:
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
-      
+
+      - name: Check files after unzip
+        run: ls -R
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-        #  client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_EC26A69020B34E23941C2C5CEA7C131D }}
-        #  tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_688ED3F6659A452F8CCA8F4F7A22260D }}
-        #  subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E31BC13E1922418DAA472D43596C6654 }}
-        #  client-secret: ${{ secrets.AZUREAPPSERVICE_CLIENTSECRET }}
-        #  auth-type: SERVICE_PRINCIPAL
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -130,4 +79,3 @@ jobs:
           app-name: 'n8n-api'
           slot-name: 'Production'
           package: .
-          
