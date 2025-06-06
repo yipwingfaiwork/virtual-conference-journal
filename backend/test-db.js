@@ -12,7 +12,7 @@ async function testConnection() {
       database: process.env.DB_NAME,
       port: process.env.DB_PORT,
       ssl: {
-        ca: require('fs').readFileSync('./certs/BaltimoreCyberTrustRoot.crt.pem')
+        ca: require('fs').readFileSync('C:\\Github\\virtual-conference-journal\\backend\\certs\\DigiCertGlobalRootCA.crt.pem')
       }
     });
     console.log('Connection established, testing query...');
