@@ -23,6 +23,10 @@ const startServer = async () => {
     DB_PORT: process.env.DB_PORT,
     PORT: process.env.PORT
   });
+  // 強制刷新日誌
+  console.log('Flushing logs...');
+  process.stdout.write('', () => { console.log('Logs flushed'); });
+
   try {
     console.log('Testing database connection...');
     const connectionResult = await testConnection();
