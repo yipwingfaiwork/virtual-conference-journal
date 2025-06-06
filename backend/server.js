@@ -1,24 +1,9 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const { testConnection } = require('./config/db');
-
-// Load environment variables
-dotenv.config();
-
-// Import middleware and routes setup
-const setupMiddleware = require('./middleware');
-const setupRoutes = require('./routes');
-
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT; // 僅使用 Azure 分配的端口
 
-// Apply middleware
 setupMiddleware(app);
-
-// Setup routes
 setupRoutes(app);
 
-// Start the server with database connection check
 const startServer = async () => {
   console.log('Starting server...');
   console.log('Environment variables:', {
@@ -49,29 +34,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-
-
-//const express = require('express');
-//const dotenv = require('dotenv');
-
-// Load environment variables
-//dotenv.config();
-
-// Import middleware and routes setup
-//const setupMiddleware = require('./middleware');
-//const setupRoutes = require('./routes');
-
-//const app = express();
-//const PORT = process.env.PORT || 5001;
-
-// Apply middleware
-//setupMiddleware(app);
-
-// Setup routes
-//setupRoutes(app);
-
-// Start the server
-//app.listen(PORT, () => {
-//  console.log(`Server running on port ${PORT}`);
-//});
