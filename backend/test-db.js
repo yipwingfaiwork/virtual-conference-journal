@@ -22,7 +22,7 @@ async function testConnection() {
       ssl: {
         ca: caCert,
         rejectUnauthorized: true,
-        minVersion: 'TLSv1.2' // 匹配 hoteldb 的 TLS 1.2
+        minVersion: 'TLSv1.2'
       }
     });
     console.log('Connection established, testing query...');
