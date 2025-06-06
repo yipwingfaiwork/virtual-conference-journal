@@ -4,6 +4,16 @@ const PORT = process.env.PORT; // 僅使用 Azure 分配的端口
 setupMiddleware(app);
 setupRoutes(app);
 
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason.stack);
+  process.exit(1);
+});
+
 const startServer = async () => {
   console.log('Starting server...');
   console.log('Environment variables:', {
