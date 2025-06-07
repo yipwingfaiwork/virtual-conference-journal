@@ -5,6 +5,14 @@ const { testConnection } = require('./test-db');
 
 const app = express();
 
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 async function startServer() {
   console.log('Starting server...');
   console.log('Environment variables:', process.env);
@@ -15,7 +23,7 @@ async function startServer() {
     process.exit(1);
   }
   console.log('Database connection successful');
-  
+
   app.use(cors({
     origin: [
       'https://lemon-moss-03941a703.6.azurestaticapps.net',
