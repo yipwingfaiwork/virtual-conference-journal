@@ -29,7 +29,14 @@ const pool = mysql.createPool({
     minVersion: 'TLSv1.2',
     secureProtocol: 'TLSv1_2_method'
   },
-  connectionLimit: 10 // 確保連線池配置
+  connectionLimit: 10,
+  debug: true // 臨時啟用調試以檢查連線細節
+});
+
+pool.getConnection((err, conn) => {
+  if (err) console.error('Pool connection error:', err);
+  else console.log('Pool connection successful');
+  if (conn) conn.release();
 });
 
 module.exports = pool;
