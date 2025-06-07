@@ -3,6 +3,13 @@ const cors = require('cors');
 const setupRoutes = require('./routes');
 const { testConnection } = require('./test-db');
 
+const db = require('./config/db');
+db.getConnection((err, conn) => {
+  if (err) console.error('Pool connection error:', err);
+  else console.log('Pool connection successful');
+  if (conn) conn.release();
+});
+
 const app = express();
 
 process.on('uncaughtException', (error) => {
