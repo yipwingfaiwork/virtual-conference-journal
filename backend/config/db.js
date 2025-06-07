@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const certPath = path.join(__dirname, 'certs', 'DigiCertGlobalRootCA.crt.pem');
-console.log('Resolved SSL cert path:', certPath);
+console.log('Resolved SSL cert path in db.js:', certPath);
 let caCert;
 try {
   caCert = fs.readFileSync(certPath);
@@ -28,7 +28,8 @@ const pool = mysql.createPool({
     rejectUnauthorized: true,
     minVersion: 'TLSv1.2',
     secureProtocol: 'TLSv1_2_method'
-  }
+  },
+  connectionLimit: 10 // 確保連線池配置
 });
 
 module.exports = pool;
