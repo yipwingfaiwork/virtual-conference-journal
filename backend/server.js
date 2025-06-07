@@ -2,13 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const setupRoutes = require('./routes');
 const { testConnection } = require('./test-db');
-
-const db = require('./config/db');
-db.getConnection((err, conn) => {
-  if (err) console.error('Pool connection error:', err);
-  else console.log('Pool connection successful');
-  if (conn) conn.release();
-});
+const setupMiddleware = require('./middleware');
 
 const app = express();
 
@@ -31,18 +25,7 @@ async function startServer() {
   }
   console.log('Database connection successful');
 
-  app.use(cors({
-    origin: [
-      'https://lemon-moss-03941a703.6.azurestaticapps.net',
-      'http://127.0.0.1:8080',
-      'http://127.0.0.1:3000'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  }));
-  app.use(express.json());
-
+  setupMiddleware(app); // 確保中間件在此處調用
   setupRoutes(app);
 
   const port = process.env.PORT || 5001;

@@ -1,32 +1,33 @@
-
-//const cors = require('cors');
-//const express = require('express');
-
-//// Configure and export middleware
-//const setupMiddleware = (app) => {
-////  // Apply middleware
-//  app.use(cors());
-//  app.use(express.json());
-//};
-
-//module.exports = setupMiddleware;
-
-
-//16/5/25 Fai update
 const cors = require('cors');
 const express = require('express');
 
 const setupMiddleware = (app) => {
-  app.use(cors({
+  const corsOptions = {
     origin: [
-      'https://lemon-moss-03941a703.6.azurestaticapps.net', // 正確的前端域名
-      'http://127.0.0.1:8080', // Fai testing 7/6/2025
-      'http://127.0.0.1:3000'  // Fai testing 7/6/2025
+      'https://lemon-moss-03941a703.6.azurestaticapps.net',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:3000'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true // 與 Azure 門戶設置一致
-  }));
+    credentials: true,
+    optionsSuccessStatus: 200 // 處理預檢請求
+  };
+
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions)); // 明確處理 OPTIONS 請求
+
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    next();
+  });
+
   app.use(express.json());
 };
 
