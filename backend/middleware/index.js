@@ -20,8 +20,8 @@ const setupMiddleware = (app) => {
   app.use(cors({
     origin: [
       'https://lemon-moss-03941a703.6.azurestaticapps.net', // 正確的前端域名
-      'http://localhost:8080',
-      'http://localhost:3000'
+      'http://127.0.0.1:8080', // Fai testing 7/6/2025
+      'http://127.0.0.1:3000'  // Fai testing 7/6/2025
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
