@@ -15,7 +15,7 @@ async function startServer() {
     process.exit(1);
   }
   console.log('Database connection successful');
-
+  
   app.use(cors({
     origin: [
       'https://lemon-moss-03941a703.6.azurestaticapps.net',
