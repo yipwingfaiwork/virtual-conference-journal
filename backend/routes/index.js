@@ -1,6 +1,17 @@
 const express = require('express');
 const router = express.Router();
 
+router.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+router.post('/api/auth/login', (req, res) => {
+  // 假設的登入邏輯，實際應連接到數據庫驗證
+  res.status(500).json({ error: 'Login failed', details: 'Database connection issue' });
+});
+
+module.exports = router;
+
 // Import route modules
 const authRoutes = require('./auth');
 const recordRoutes = require('./records');

@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const setupRoutes = require('./routes');
 const { testConnection } = require('./test-db');
-require('dotenv').config();
 
 const app = express();
 
@@ -17,7 +16,16 @@ async function startServer() {
   }
   console.log('Database connection successful');
 
-  app.use(cors({ credentials: true, origin: true }));
+  app.use(cors({
+    origin: [
+      'https://lemon-moss-03941a703.6.azurestaticapps.net',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:3000'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  }));
   app.use(express.json());
 
   setupRoutes(app);
