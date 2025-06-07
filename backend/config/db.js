@@ -1,9 +1,8 @@
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
 
-const certPath = path.join(__dirname, '..', '..', 'certs', 'DigiCertGlobalRootCA.crt.pem');
+const certPath = path.join(__dirname, 'certs', 'DigiCertGlobalRootCA.crt.pem');
 console.log('Resolved SSL cert path:', certPath);
 let caCert;
 try {
@@ -31,6 +30,5 @@ const pool = mysql.createPool({
     secureProtocol: 'TLSv1_2_method'
   }
 });
-
 
 module.exports = pool;
