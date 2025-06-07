@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
 
 router.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -14,8 +15,8 @@ router.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     const user = users[0];
-    bcrypt // 這裡應添加密碼驗證邏輯（例如使用 bcrypt）
-    if (password !== 'pw1234') { // 臨時硬編碼，應替換為實際驗證
+    const isMatch = await bcrypt.compare(password, user.password); // 假設 password 為哈希值
+    if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     res.json({ message: 'Login successful', userId: user.id });
