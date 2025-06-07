@@ -25,7 +25,7 @@ async function startServer() {
   }
   console.log('Database connection successful');
 
-  setupMiddleware(app); // 確保中間件在此處調用
+  setupMiddleware(app);
   setupRoutes(app);
 
   const port = process.env.PORT || 5001;
