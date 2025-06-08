@@ -1,6 +1,6 @@
 
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'relax-hotel-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'relaxhotelkey'; //'relax-hotel-secret-key';
 
 // Middleware to authenticate token
 exports.authenticateToken = (req, res, next) => {
