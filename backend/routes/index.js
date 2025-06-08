@@ -12,7 +12,10 @@ router.post('/api/auth/login', async (req, res) => {
   console.log('Login attempt:', req.body);
   const { email, password } = req.body;
   try {
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [users] = await pool.query(
+      'SELECT id, name, email, password, phone, address, departmentId, isAdmin, isActive, createdAt, updatedAt FROM users WHERE email = ?',
+      [email]
+    );
     if (users.length === 0) {
       console.log('User not found:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -24,7 +27,7 @@ router.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     console.log('Login successful for:', email);
-    res.json({ 
+    res.json({
       token: 'relaxhotelkey' /* 替換為實際 JWT 生成邏輯 */,
       user: {
         id: user.id,
@@ -33,7 +36,7 @@ router.post('/api/auth/login', async (req, res) => {
         phone: user.phone || '123-456-7890',
         address: user.address || '123 Admin St',
         departmentId: user.departmentId || 1,
-        isAdmin: user.isAdmin || 1,
+        isAdmin: user.isAdmin || 0,
         isActive: user.isActive || 1,
         createdAt: user.createdAt || new Date().toISOString(),
         updatedAt: user.updatedAt || new Date().toISOString()
