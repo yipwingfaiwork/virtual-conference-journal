@@ -24,7 +24,21 @@ router.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     console.log('Login successful for:', email);
-    res.json({ message: 'Login successful', userId: user.id });
+    res.json({ 
+      token: 'relaxhotelkey' /* 替換為實際 JWT 生成邏輯 */,
+      user: {
+        id: user.id,
+        name: user.name || 'Admin User',
+        email: user.email,
+        phone: user.phone || '123-456-7890',
+        address: user.address || '123 Admin St',
+        departmentId: user.departmentId || 1,
+        isAdmin: user.isAdmin || 1,
+        isActive: user.isActive || 1,
+        createdAt: user.createdAt || new Date().toISOString(),
+        updatedAt: user.updatedAt || new Date().toISOString()
+      }
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed', details: error.message });
