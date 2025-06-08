@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import Dashboard from "./pages/Dashboard";
 import RecordsPage from "./pages/RecordsPage";
 import RecordDetail from "./pages/RecordDetail";
@@ -29,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin-login" element={<AdminLoginPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/records" element={<RecordsPage />} />
             <Route path="/records/:id" element={<RecordDetail />} />

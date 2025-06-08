@@ -10,8 +10,14 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Get user from database
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    // Get user from database with department info
+    const [users] = await db.query(`
+      SELECT 
+        u.*, d.name as departmentName 
+      FROM users u 
+      LEFT JOIN departments d ON u.departmentId = d.id 
+      WHERE u.email = ?
+    `, [email]);
     
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -66,16 +72,19 @@ exports.logout = async (req, res) => {
   }
 };
 
-// Get current user controller
 exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.userId;
     
     // Get fresh user data from database
-    const [users] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin FROM users WHERE id = ?', 
-      [userId]
-    );
+    const [users] = await db.query(`
+      SELECT 
+        u.id, u.name, u.email, u.phone, u.address, u.departmentId, u.isAdmin,
+        d.name as departmentName
+      FROM users u 
+      LEFT JOIN departments d ON u.departmentId = d.id 
+      WHERE u.id = ?
+    `, [userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });

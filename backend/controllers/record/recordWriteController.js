@@ -7,7 +7,7 @@ const ActivityLogService = require('../../services/activityLogService');
 // Create new record
 const createRecord = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const userInfo = req.user;
     
     const {
@@ -28,6 +28,13 @@ const createRecord = async (req, res) => {
     // Map frontend accessLevel to database fields
     const { isPublic, isConfidential } = RecordService.mapAccessLevel(accessLevel);
     
+    // Get user's department if not provided
+    let recordDepartmentId = departmentId;
+    if (!recordDepartmentId) {
+      const [userRows] = await pool.execute('SELECT departmentId FROM users WHERE id = ?', [userId]);
+      recordDepartmentId = userRows[0]?.departmentId || 1;
+    }
+    
     // Insert the record
     const insertQuery = `
       INSERT INTO records (
@@ -40,7 +47,7 @@ const createRecord = async (req, res) => {
     const [result] = await pool.execute(insertQuery, [
       date,
       duration,
-      departmentId || userInfo.departmentId,
+      recordDepartmentId,
       title,
       JSON.stringify(participants || []),
       videoLink || '',
@@ -73,7 +80,7 @@ const createRecord = async (req, res) => {
 const updateRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const userInfo = req.user;
     
     // Check permissions
@@ -143,11 +150,10 @@ const updateRecord = async (req, res) => {
   }
 };
 
-// Delete record
 const deleteRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const userInfo = req.user;
     
     // Check permissions and get title

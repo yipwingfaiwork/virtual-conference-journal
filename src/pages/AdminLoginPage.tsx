@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MailIcon, LockIcon, LogInIcon, ShieldIcon } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { MailIcon, LockIcon, ShieldIcon, ArrowLeftIcon } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,14 +9,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { login } from '@/lib/auth';
 
-const LoginPage = () => {
+const AdminLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -34,13 +34,22 @@ const LoginPage = () => {
       const user = await login(email, password);
       
       if (user) {
+        if (!user.isAdmin) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         toast({
-          title: "Login successful",
+          title: "Admin login successful",
           description: `Welcome back, ${user.name}!`,
         });
         
-        // Redirect to dashboard
-        navigate('/dashboard');
+        // Redirect to admin dashboard
+        navigate('/admin');
       } else {
         toast({
           title: "Login failed",
@@ -54,14 +63,10 @@ const LoginPage = () => {
         description: "Something went wrong. Please try again later.",
         variant: "destructive",
       });
-      console.error('Login error:', error);
+      console.error('Admin login error:', error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleAdminRedirect = () => {
-    navigate('/admin-login');
   };
 
   return (
@@ -69,28 +74,31 @@ const LoginPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-terracotta mb-2">Relax Hotel Group</h1>
-          <p className="text-gray">Virtual Conference Records Management</p>
+          <p className="text-gray">Admin Access Portal</p>
         </div>
         
         <Card className="border-gold/20 shadow-md animate-fade-in">
           <CardHeader>
-            <CardTitle className="text-terracotta">User Login</CardTitle>
+            <CardTitle className="text-terracotta flex items-center">
+              <ShieldIcon className="mr-2 h-5 w-5" />
+              Admin Login
+            </CardTitle>
             <CardDescription>
-              Enter your credentials to access your account
+              Enter your admin credentials to access the management system
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleAdminLogin}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="admin-email">Email</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <MailIcon className="h-4 w-4 text-gray" />
                   </div>
                   <Input
-                    id="email"
+                    id="admin-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="admin@example.com"
                     className="pl-10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -98,13 +106,13 @@ const LoginPage = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="admin-password">Password</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <LockIcon className="h-4 w-4 text-gray" />
                   </div>
                   <Input
-                    id="password"
+                    id="admin-password"
                     type="password"
                     placeholder="••••••••"
                     className="pl-10"
@@ -124,20 +132,24 @@ const LoginPage = () => {
                   <span>Logging in...</span>
                 ) : (
                   <>
-                    <LogInIcon className="mr-2 h-4 w-4" /> Sign In
+                    <ShieldIcon className="mr-2 h-4 w-4" /> Admin Sign In
                   </>
                 )}
               </Button>
               
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={handleAdminRedirect}
-                className="w-full border-terracotta text-terracotta hover:bg-terracotta hover:text-cream"
+              <Link 
+                to="/login"
+                className="w-full"
               >
-                <ShieldIcon className="mr-2 h-4 w-4" />
-                Admin Login
-              </Button>
+                <Button 
+                  type="button"
+                  variant="outline"
+                  className="w-full border-gray text-gray hover:bg-gray hover:text-cream"
+                >
+                  <ArrowLeftIcon className="mr-2 h-4 w-4" />
+                  Back to User Login
+                </Button>
+              </Link>
             </CardFooter>
           </form>
         </Card>
@@ -146,4 +158,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default AdminLoginPage;

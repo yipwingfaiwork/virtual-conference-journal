@@ -1,4 +1,3 @@
-
 const bcrypt = require('bcrypt');
 const db = require('../config/db');
 const { logActivity } = require('../utils/logger');
@@ -11,9 +10,15 @@ exports.getAllUsers = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    const [users] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users ORDER BY name'
-    );
+    const [users] = await db.query(`
+      SELECT 
+        u.id, u.name, u.email, u.phone, u.address, u.departmentId,
+        u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        d.name as departmentName
+      FROM users u
+      LEFT JOIN departments d ON u.departmentId = d.id
+      ORDER BY u.name
+    `);
     
     res.json(users);
   } catch (error) {
@@ -32,10 +37,15 @@ exports.getUserById = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    const [users] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users WHERE id = ?',
-      [userId]
-    );
+    const [users] = await db.query(`
+      SELECT 
+        u.id, u.name, u.email, u.phone, u.address, u.departmentId,
+        u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        d.name as departmentName
+      FROM users u
+      LEFT JOIN departments d ON u.departmentId = d.id
+      WHERE u.id = ?
+    `, [userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -55,7 +65,7 @@ exports.createUser = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized. Admin access required.' });
     }
     
-    const { name, email, phone, address, department, isAdmin, isActive, password } = req.body;
+    const { name, email, phone, address, departmentId, isAdmin, isActive, password } = req.body;
     
     if (!name || !email) {
       return res.status(400).json({ error: 'Name and email are required' });
@@ -68,23 +78,28 @@ exports.createUser = async (req, res) => {
     }
     
     // Hash password (use default password if not provided)
-    const defaultPassword = password || 'defaultPassword123';
+    const defaultPassword = password || 'pw1234';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     
     // Insert user
     const [result] = await db.query(
-      'INSERT INTO users (name, email, phone, address, department, password, isAdmin, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, phone || '', address || '', department || '', hashedPassword, !!isAdmin, isActive !== false]
+      'INSERT INTO users (name, email, phone, address, departmentId, password, isAdmin, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, email, phone || '', address || '', departmentId || 1, hashedPassword, !!isAdmin, isActive !== false]
     );
     
     // Log user creation activity
     await logActivity(req.user.userId, 'CREATE_USER', `Created new user: ${name}`);
     
     // Return created user (without password)
-    const [newUser] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users WHERE id = ?',
-      [result.insertId]
-    );
+    const [newUser] = await db.query(`
+      SELECT 
+        u.id, u.name, u.email, u.phone, u.address, u.departmentId,
+        u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        d.name as departmentName
+      FROM users u
+      LEFT JOIN departments d ON u.departmentId = d.id
+      WHERE u.id = ?
+    `, [result.insertId]);
     
     res.status(201).json(newUser[0]);
   } catch (error) {
@@ -97,19 +112,12 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { name, email, phone, address, department, isAdmin, isActive } = req.body;
+    const { name, email, phone, address, departmentId, isAdmin, isActive } = req.body;
     
     // Users can only update their own data unless they're admin
     // Admin users can update any user
     if (req.user.userId != userId && !req.user.isAdmin) {
       return res.status(403).json({ error: 'Unauthorized' });
-    }
-    
-    // Only admin can change admin status and active status
-    let updateFields = { name, email, phone, address, department };
-    if (req.user.isAdmin) {
-      updateFields.isAdmin = isAdmin;
-      updateFields.isActive = isActive;
     }
     
     // Check if user exists
@@ -121,12 +129,12 @@ exports.updateUser = async (req, res) => {
     
     // Update user
     const updateQuery = req.user.isAdmin 
-      ? 'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, department = ?, isAdmin = ?, isActive = ? WHERE id = ?'
-      : 'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, department = ? WHERE id = ?';
+      ? 'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, departmentId = ?, isAdmin = ?, isActive = ? WHERE id = ?'
+      : 'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, departmentId = ? WHERE id = ?';
     
     const updateParams = req.user.isAdmin 
-      ? [name, email, phone, address, department, !!isAdmin, isActive !== false, userId]
-      : [name, email, phone, address, department, userId];
+      ? [name, email, phone, address, departmentId, !!isAdmin, isActive !== false, userId]
+      : [name, email, phone, address, departmentId, userId];
     
     await db.query(updateQuery, updateParams);
     
@@ -134,10 +142,15 @@ exports.updateUser = async (req, res) => {
     await logActivity(req.user.userId, 'UPDATE_USER', `Updated user profile: ${name}`);
     
     // Get updated user
-    const [updatedUsers] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users WHERE id = ?', 
-      [userId]
-    );
+    const [updatedUsers] = await db.query(`
+      SELECT 
+        u.id, u.name, u.email, u.phone, u.address, u.departmentId,
+        u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        d.name as departmentName
+      FROM users u
+      LEFT JOIN departments d ON u.departmentId = d.id
+      WHERE u.id = ?
+    `, [userId]);
     
     res.json(updatedUsers[0]);
   } catch (error) {

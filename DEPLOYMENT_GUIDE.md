@@ -1,294 +1,180 @@
 
-# Deployment Guide for Relax Hotel Group Management System
+# Relax Hotel Group Virtual Conference Records Management System
+## Deployment Guide
 
-This guide will help you deploy the Relax Hotel Group Management System, a React application with a Node.js backend on Microsoft Azure.
+### 系統概述
+本系統是一個全端會議記錄管理系統，包含前端 React 應用程式和後端 Node.js API，支援使用者和管理員的不同權限級別。
 
-## Project Structure
-
-The project is organized into two main folders:
-
+### 網站架構圖
 ```
 relax-hotel-system/
-├── frontend/ (React application built with Vite)
-└── backend/ (Node.js API server)
+├── frontend/ (React + Vite + TypeScript)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/ (shadcn/ui 元件)
+│   │   │   ├── admin/ (管理員元件)
+│   │   │   ├── dashboard/ (儀表板元件)
+│   │   │   ├── forms/ (表單元件)
+│   │   │   ├── records/ (記錄相關元件)
+│   │   │   ├── Navbar.tsx
+│   │   │   └── Footer.tsx
+│   │   ├── pages/
+│   │   │   ├── LandingPage.tsx (首頁)
+│   │   │   ├── LoginPage.tsx (使用者登入)
+│   │   │   ├── AdminLoginPage.tsx (管理員登入)
+│   │   │   ├── Dashboard.tsx (儀表板)
+│   │   │   ├── RecordsPage.tsx (記錄列表)
+│   │   │   ├── RecordDetail.tsx (記錄詳情)
+│   │   │   ├── RecordForm.tsx (新增/編輯記錄)
+│   │   │   ├── ProfilePage.tsx (個人資料)
+│   │   │   ├── AdminPage.tsx (管理員面板)
+│   │   │   └── NotFoundPage.tsx (404頁面)
+│   │   ├── services/
+│   │   │   ├── api-service.ts (API 呼叫)
+│   │   │   ├── auth-service.ts (驗證服務)
+│   │   │   └── permission-service.ts (權限服務)
+│   │   ├── lib/
+│   │   │   ├── auth.ts (驗證相關)
+│   │   │   ├── types.ts (TypeScript 類型)
+│   │   │   └── utils.ts (通用工具)
+│   │   ├── hooks/ (自定義 React Hooks)
+│   │   └── App.tsx (主應用程式)
+│   └── public/
+└── backend/ (Node.js + Express + MySQL)
+    ├── controllers/
+    │   ├── record/
+    │   │   ├── recordReadController.js (記錄讀取)
+    │   │   ├── recordWriteController.js (記錄寫入)
+    │   │   └── recordChangeController.js (記錄變更)
+    │   ├── authController.js (驗證控制器)
+    │   ├── userController.js (使用者控制器)
+    │   ├── activityLogController.js (活動日誌)
+    │   └── recordController.js (記錄控制器聚合)
+    ├── services/
+    │   ├── recordService.js (記錄業務邏輯)
+    │   ├── tagService.js (標籤業務邏輯)
+    │   └── activityLogService.js (活動日誌服務)
+    ├── routes/
+    │   ├── auth.js (驗證路由)
+    │   ├── users.js (使用者路由)
+    │   ├── records.js (記錄路由)
+    │   ├── tags.js (標籤路由)
+    │   ├── departments.js (部門路由)
+    │   ├── financial-periods.js (財務期間路由)
+    │   ├── activity-logs.js (活動日誌路由)
+    │   └── index.js (路由聚合)
+    ├── middleware/
+    │   ├── auth.js (驗證中介軟體)
+    │   └── index.js (中介軟體聚合)
+    ├── config/
+    │   └── db.js (資料庫配置)
+    ├── utils/
+    │   └── logger.js (日誌工具)
+    ├── db-schema.sql (資料庫架構)
+    └── server.js (主伺服器檔案)
 ```
 
-## Prerequisites
+### 主要功能
+- **使用者管理**: 註冊、登入、權限控制
+- **記錄管理**: 新增、編輯、刪除、搜尋會議記錄
+- **標籤系統**: 記錄分類和篩選
+- **部門管理**: 部門組織架構
+- **活動日誌**: 系統操作追蹤
+- **管理員面板**: 全系統管理功能
 
-- Microsoft Azure account with active subscription
-- Azure CLI installed
-- Node.js and npm installed
-- Git installed
+### 技術堆疊
+**前端**:
+- React 18 + TypeScript
+- Vite (建置工具)
+- Tailwind CSS (樣式)
+- shadcn/ui (UI 元件庫)
+- React Router (路由)
+- Tanstack Query (狀態管理)
+- Axios (HTTP 客戶端)
 
-## Step 1: Database Setup
+**後端**:
+- Node.js + Express
+- MySQL (資料庫)
+- JWT (身份驗證)
+- bcrypt (密碼加密)
 
-1. Create an Azure MySQL Database:
-   - Log in to the Azure Portal (https://portal.azure.com)
-   - Create a new Azure Database for MySQL flexible server
-   - Create a new database named `relax_hotel_system`
-   - Configure firewall rules to allow your development machine and Azure services
+### 資料庫架構
+- **users**: 使用者資料
+- **departments**: 部門資料
+- **records**: 會議記錄
+- **tags**: 標籤系統
+- **record_tags**: 記錄標籤關聯
+- **financial_periods**: 財務期間
+- **activity_logs**: 活動日誌
 
-2. Import the SQL schema:
-   - Use the Azure Cloud Shell or MySQL Workbench to connect to your database
-   - **IMPORTANT**: Execute the SQL schema from `backend/db-schema.sql` line by line or in sections to avoid foreign key constraint errors
-   - This will create the required normalized tables:
-     - `departments` - Department information
-     - `access_levels` - User permission levels
-     - `tags` - Meeting classification tags
-     - `financial_periods` - Financial reporting periods
-     - `users` - Enhanced user table with department and access level relationships
-     - `records` - Enhanced meeting records with access control
-     - `record_tags` - Many-to-many relationship between records and tags
-     - `record_changes` - Change history tracking
-     - `activity_logs` - System activity logging
-   - Sample data includes:
-     - Four sample users with different access levels
-     - Sample meeting records with tags
-     - Default departments, access levels, tags, and financial periods
+### 部署步驟
 
-3. Database Features:
-   - **Normalized Design**: All tables follow 1NF, 2NF, and 3NF principles
-   - **Access Control**: Records have access levels (PUBLIC, DEPARTMENT, RESTRICTED, CONFIDENTIAL)
-   - **Change Tracking**: All record modifications are logged with timestamps
-   - **Tag System**: Flexible tagging system for meeting classification
-   - **Department Isolation**: Users can only access records from their department unless explicitly granted access
+#### 1. 環境準備
+- Node.js 16+
+- MySQL 8.0+
+- Azure 帳戶 (若部署至 Azure)
 
-## Step 2: Backend Setup
+#### 2. 資料庫設定
+1. 建立 MySQL 資料庫
+2. 執行 `backend/db-schema.sql` 建立表格和初始資料
+3. 更新 `backend/config/db.js` 中的資料庫連線資訊
 
-### Local Development
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+#### 3. 後端部署
+1. 安裝依賴: `npm install`
+2. 設定環境變數:
+   - `DB_HOST`: 資料庫主機
+   - `DB_USER`: 資料庫使用者
+   - `DB_PASSWORD`: 資料庫密碼
+   - `DB_NAME`: 資料庫名稱
+   - `JWT_SECRET`: JWT 密鑰
+   - `PORT`: 伺服器埠號 (預設 5001)
+3. 啟動伺服器: `npm start`
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+#### 4. 前端部署
+1. 安裝依賴: `npm install`
+2. 設定環境變數:
+   - `VITE_API_URL`: 後端 API URL
+3. 建置: `npm run build`
+4. 部署 `dist` 資料夾至靜態網站託管服務
 
-3. Create a `.env` file with the following content:
-   ```
-   DB_HOST=your-azure-mysql-server.mysql.database.azure.com
-   DB_USER=your_username
-   DB_PASSWORD=your_password
-   DB_NAME=relax_hotel_system
-   DB_PORT=3306
-   PORT=5001
-   JWT_SECRET=relax-hotel-secret-key
-   ```
+#### 5. Azure 部署配置
+- 使用 Azure App Service 部署後端
+- 使用 Azure Static Web Apps 部署前端
+- 設定 Azure Database for MySQL
 
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+### 預設帳戶
+- **管理員**: admin@example.com / pw1234
+- **一般使用者**: user2@example.com / pw1234
 
-### New API Endpoints Added
-- `/api/tags` - Tag management for meeting classification
-- `/api/financial-periods` - Financial period management
-- `/api/users` - Enhanced user management with department and access level support
-- `/api/records/:id/changes` - Record change history
+### API 端點
+- `POST /api/auth/login` - 登入
+- `GET /api/auth/me` - 取得目前使用者
+- `GET /api/records` - 取得記錄列表
+- `POST /api/records` - 新增記錄
+- `PUT /api/records/:id` - 更新記錄
+- `DELETE /api/records/:id` - 刪除記錄
+- `GET /api/users` - 取得使用者列表 (管理員)
+- `GET /api/departments` - 取得部門列表
+- `GET /api/tags` - 取得標籤列表
 
-### Azure Deployment
-1. Create an Azure Web App for the backend:
-   - Log in to the Azure Portal
-   - Create a new Web App with Node.js runtime
-   - Set up deployment from GitHub using the GitHub Actions workflow
+### 安全性考量
+- JWT Token 驗證
+- 密碼 bcrypt 加密
+- 基於角色的存取控制 (RBAC)
+- SQL 注入防護
+- CORS 設定
 
-2. Configure environment variables in the Azure Web App:
-   - Go to your Web App > Configuration > Application settings
-   - Add all the environment variables from your .env file
+### 監控與維護
+- 檢查資料庫連線狀態
+- 監控 API 回應時間
+- 定期備份資料庫
+- 更新安全性套件
 
-3. GitHub Actions deployment is configured in `.github/workflows/main_n8n-api.yml`
-   - Make sure the correct Azure credentials are configured in GitHub repository secrets
+### 疑難排解
+- 檢查資料庫連線設定
+- 確認環境變數正確設定
+- 查看伺服器日誌檔案
+- 驗證 API 端點可用性
 
-## Step 3: Frontend Setup
-
-### Local Development
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env.local` file with:
-   ```
-   VITE_API_URL=http://localhost:5001/api
-   # For production: VITE_API_URL=https://your-backend-webapp.azurewebsites.net/api
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-### New Frontend Features Added
-- **Enhanced Search**: Multi-criteria filtering by date, title, keywords, creator, tags, and financial periods
-- **Calendar View**: Interactive calendar display of meeting records
-- **Change History**: View complete change history for each record
-- **Tag System**: Visual tag management and filtering
-- **Access Control**: Permission-based record visibility
-- **Department Filtering**: Department-based record access control
-
-### Azure Deployment
-1. For frontend deployment, we're using Azure Static Web Apps:
-   - Configured in `.github/workflows/azure-static-web-apps-lemon-moss-03941a703.yml`
-   - This automatically builds and deploys your React app to Azure Static Web Apps
-   - **Important**: This project uses Vite which outputs to the `dist` directory, not `build`
-
-2. Configure environment variables:
-   - Go to your Static Web App > Configuration
-   - Add the production API URL environment variable:
-     ```
-     VITE_API_URL=https://your-backend-webapp.azurewebsites.net/api
-     ```
-
-## Build and Output Configuration
-
-For Vite-based applications:
-- The default build output directory is `dist`
-- The Azure Static Web App workflow should have `output_location` set to `dist`
-- The build command is `npm run build` which runs Vite's build process
-
-## Enhanced Database Schema
-
-The application now uses a fully normalized database structure:
-
-### Key Tables and Relationships
-
-#### Users Table (Enhanced)
-```sql
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  phone VARCHAR(100),
-  address TEXT,
-  departmentId INT,
-  accessLevelId INT DEFAULT 1,
-  isAdmin BOOLEAN DEFAULT false,
-  isActive BOOLEAN DEFAULT true,
-  FOREIGN KEY (departmentId) REFERENCES departments(id),
-  FOREIGN KEY (accessLevelId) REFERENCES access_levels(id)
-);
-```
-
-#### Records Table (Enhanced)
-```sql
-CREATE TABLE records (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  date DATETIME NOT NULL,
-  duration VARCHAR(100) NOT NULL,
-  departmentId INT,
-  title VARCHAR(255) NOT NULL,
-  participants JSON,
-  importFromAI BOOLEAN DEFAULT false,
-  videoLink TEXT,
-  textRecord TEXT,
-  outline TEXT,
-  remark TEXT,
-  createdBy INT,
-  financialPeriodId INT,
-  accessLevel ENUM('PUBLIC', 'DEPARTMENT', 'RESTRICTED', 'CONFIDENTIAL') DEFAULT 'DEPARTMENT',
-  allowedDepartments JSON,
-  allowedUsers JSON,
-  isConfidential BOOLEAN DEFAULT false,
-  FOREIGN KEY (createdBy) REFERENCES users(id),
-  FOREIGN KEY (departmentId) REFERENCES departments(id),
-  FOREIGN KEY (financialPeriodId) REFERENCES financial_periods(id)
-);
-```
-
-#### New Supporting Tables
-- **departments**: Normalized department information
-- **access_levels**: User permission levels with JSON permissions
-- **tags**: Meeting classification tags with colors
-- **financial_periods**: Financial reporting periods
-- **record_tags**: Many-to-many relationship between records and tags
-- **record_changes**: Complete change history tracking
-- **activity_logs**: Enhanced system activity logging
-
-## Feature Overview
-
-The application now provides these enhanced features:
-
-### All Users
-- Login and authentication with department and access level validation
-- Enhanced dashboard with department-specific statistics
-- Advanced search and filtering capabilities
-- Calendar view of meeting records
-- Tag-based record organization
-- Access to records based on department and permission level
-
-### Enhanced Search and Filtering
-- **Text Search**: Search by title, content, and keywords
-- **Date Range**: Filter by specific date ranges
-- **Department**: Filter by department (respecting access permissions)
-- **Tags**: Multi-tag filtering with visual tag selection
-- **Creator**: Filter by record creator
-- **Financial Period**: Filter by financial reporting periods
-- **Access Level**: Filter by record access level
-
-### Access Control System
-- **Department-based Access**: Users can only see records from their department by default
-- **Access Level Control**: Four levels (Basic, Supervisor, Manager, Admin) with different permissions
-- **Record-level Security**: Individual records can have PUBLIC, DEPARTMENT, RESTRICTED, or CONFIDENTIAL access
-- **Cross-department Access**: Records can be explicitly shared with other departments
-- **User-specific Access**: Records can be shared with specific users
-
-### Administrators
-- All standard user features
-- Full system access regardless of department restrictions
-- User management capabilities
-- System activity monitoring
-- Access to all records and change history
-
-## Troubleshooting Azure Deployments
-
-1. **Database Setup Issues:**
-   - Execute the SQL schema in sections to avoid constraint errors
-   - Ensure all tables are created before running the sample data inserts
-   - Verify foreign key relationships are properly established
-   - Check that indexes are created for optimal performance
-
-2. **Backend Deployment Issues:**
-   - Verify all new route files are properly deployed
-   - Check that database connection supports the new table structure
-   - Ensure environment variables include all required database credentials
-   - Test API endpoints individually: `/api/tags`, `/api/financial-periods`, `/api/users`
-
-3. **Frontend Deployment Issues:**
-   - Verify that the enhanced search component dependencies are installed
-   - Check that all new TypeScript interfaces are properly defined
-   - Test calendar view functionality
-   - Verify tag filtering and visual components work correctly
-
-4. **Permission and Access Issues:**
-   - Verify user department and access level assignments in the database
-   - Test record visibility based on access levels
-   - Check that department filtering works correctly
-   - Verify that change history tracking is functioning
-
-## Security Considerations for Production
-
-1. **Enhanced Database Security:**
-   - Use Azure Key Vault for database credentials
-   - Implement row-level security policies
-   - Set up regular automated backups
-   - Monitor access patterns for unusual activity
-
-2. **Access Control Security:**
-   - Regularly audit user access levels and department assignments
-   - Implement session timeout for sensitive access levels
-   - Log all access attempts to confidential records
-   - Set up alerts for unauthorized access attempts
-
-3. **Data Protection:**
-   - Encrypt sensitive record content at rest
-   - Implement data retention policies for change history
-   - Set up automated cleanup for old activity logs
-   - Ensure GDPR compliance for user data handling
+### 聯絡資訊
+如有部署相關問題，請聯絡系統管理員。
