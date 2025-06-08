@@ -7,6 +7,8 @@ import { User } from '@/lib/types';
 import ActivityLogs from '@/components/admin/ActivityLogs';
 import AdminRecordsManagement from '@/components/admin/AdminRecordsManagement';
 import AdminTagsManagement from '@/components/admin/AdminTagsManagement';
+import AdminUsersManagement from '@/components/admin/AdminUsersManagement';
+import AdminDepartmentsManagement from '@/components/admin/AdminDepartmentsManagement';
 
 const AdminPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -55,8 +57,9 @@ const AdminPage = () => {
       <Tabs defaultValue="records" className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="records">Records Management</TabsTrigger>
-          <TabsTrigger value="tags">Tags Management</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="tags">Tags Management</TabsTrigger>
           <TabsTrigger value="activity">Activity Logs</TabsTrigger>
         </TabsList>
         
@@ -64,14 +67,16 @@ const AdminPage = () => {
           <AdminRecordsManagement />
         </TabsContent>
         
-        <TabsContent value="tags">
-          <AdminTagsManagement />
+        <TabsContent value="users">
+          <AdminUsersManagement />
         </TabsContent>
         
-        <TabsContent value="users">
-          <div className="text-center text-muted-foreground p-8">
-            User management coming soon
-          </div>
+        <TabsContent value="departments">
+          <AdminDepartmentsManagement />
+        </TabsContent>
+        
+        <TabsContent value="tags">
+          <AdminTagsManagement />
         </TabsContent>
         
         <TabsContent value="activity">

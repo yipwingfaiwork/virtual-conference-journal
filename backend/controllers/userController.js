@@ -12,7 +12,7 @@ exports.getAllUsers = async (req, res) => {
     }
     
     const [users] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin FROM users'
+      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users ORDER BY name'
     );
     
     res.json(users);
@@ -33,7 +33,7 @@ exports.getUserById = async (req, res) => {
     }
     
     const [users] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin FROM users WHERE id = ?',
+      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users WHERE id = ?',
       [userId]
     );
     
@@ -48,15 +48,68 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+// Create new user (admin only)
+exports.createUser = async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized. Admin access required.' });
+    }
+    
+    const { name, email, phone, address, department, isAdmin, isActive, password } = req.body;
+    
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+    
+    // Check if email already exists
+    const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existingUsers.length > 0) {
+      return res.status(409).json({ error: 'Email already exists' });
+    }
+    
+    // Hash password (use default password if not provided)
+    const defaultPassword = password || 'defaultPassword123';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    
+    // Insert user
+    const [result] = await db.query(
+      'INSERT INTO users (name, email, phone, address, department, password, isAdmin, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, email, phone || '', address || '', department || '', hashedPassword, !!isAdmin, isActive !== false]
+    );
+    
+    // Log user creation activity
+    await logActivity(req.user.userId, 'CREATE_USER', `Created new user: ${name}`);
+    
+    // Return created user (without password)
+    const [newUser] = await db.query(
+      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users WHERE id = ?',
+      [result.insertId]
+    );
+    
+    res.status(201).json(newUser[0]);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Failed to create user', details: error.message });
+  }
+};
+
 // Update user
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { name, email, phone, address, department } = req.body;
+    const { name, email, phone, address, department, isAdmin, isActive } = req.body;
     
     // Users can only update their own data unless they're admin
+    // Admin users can update any user
     if (req.user.userId != userId && !req.user.isAdmin) {
       return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    // Only admin can change admin status and active status
+    let updateFields = { name, email, phone, address, department };
+    if (req.user.isAdmin) {
+      updateFields.isAdmin = isAdmin;
+      updateFields.isActive = isActive;
     }
     
     // Check if user exists
@@ -67,17 +120,22 @@ exports.updateUser = async (req, res) => {
     }
     
     // Update user
-    await db.query(
-      'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, department = ? WHERE id = ?',
-      [name, email, phone, address, department, userId]
-    );
+    const updateQuery = req.user.isAdmin 
+      ? 'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, department = ?, isAdmin = ?, isActive = ? WHERE id = ?'
+      : 'UPDATE users SET name = ?, email = ?, phone = ?, address = ?, department = ? WHERE id = ?';
+    
+    const updateParams = req.user.isAdmin 
+      ? [name, email, phone, address, department, !!isAdmin, isActive !== false, userId]
+      : [name, email, phone, address, department, userId];
+    
+    await db.query(updateQuery, updateParams);
     
     // Log user update activity
     await logActivity(req.user.userId, 'UPDATE_USER', `Updated user profile: ${name}`);
     
     // Get updated user
     const [updatedUsers] = await db.query(
-      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin FROM users WHERE id = ?', 
+      'SELECT id, name, email, phone, address, department, accessLevel, isAdmin, isActive, createdAt, updatedAt FROM users WHERE id = ?', 
       [userId]
     );
     
@@ -85,6 +143,42 @@ exports.updateUser = async (req, res) => {
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ error: 'Failed to update user', details: error.message });
+  }
+};
+
+// Delete user (admin only)
+exports.deleteUser = async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized. Admin access required.' });
+    }
+    
+    const userId = req.params.id;
+    
+    // Check if user exists
+    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Prevent deleting the last admin user
+    if (users[0].isAdmin) {
+      const [adminCount] = await db.query('SELECT COUNT(*) as count FROM users WHERE isAdmin = 1');
+      if (adminCount[0].count <= 1) {
+        return res.status(409).json({ error: 'Cannot delete the last admin user' });
+      }
+    }
+    
+    // Delete user
+    await db.query('DELETE FROM users WHERE id = ?', [userId]);
+    
+    // Log user deletion activity
+    await logActivity(req.user.userId, 'DELETE_USER', `Deleted user: ${users[0].name}`);
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user', details: error.message });
   }
 };
 
@@ -108,11 +202,12 @@ exports.changePassword = async (req, res) => {
     
     const user = users[0];
     
-    // Verify old password
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-    
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
+    // Verify old password (skip for admin changing other user's password)
+    if (req.user.userId == userId) {
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
     }
     
     // Hash new password
@@ -122,7 +217,7 @@ exports.changePassword = async (req, res) => {
     await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
     
     // Log password change
-    await logActivity(req.user.userId, 'CHANGE_PASSWORD', 'Changed account password');
+    await logActivity(req.user.userId, 'CHANGE_PASSWORD', `Changed password for user: ${user.name}`);
     
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
