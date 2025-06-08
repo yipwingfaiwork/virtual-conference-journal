@@ -1,5 +1,5 @@
 
-import { Calendar, Clock, Building, Users, Video, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Building, Users, Video, MessageSquare, Tag } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ConferenceRecord } from '@/lib/types';
+import { ConferenceRecord, Tag as TagType } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import apiClient from '@/services/api-service';
 
 interface BasicInformationFormProps {
   record: Partial<ConferenceRecord>;
@@ -28,6 +30,44 @@ const BasicInformationForm = ({
   handleParticipantsChange,
   participantsInput
 }: BasicInformationFormProps) => {
+  const [availableTags, setAvailableTags] = useState<TagType[]>([]);
+  const [tagsInput, setTagsInput] = useState('');
+
+  useEffect(() => {
+    // Load available tags
+    const loadTags = async () => {
+      try {
+        const response = await apiClient.get('/tags');
+        setAvailableTags(response.data);
+      } catch (error) {
+        console.error('Error loading tags:', error);
+      }
+    };
+    loadTags();
+  }, []);
+
+  useEffect(() => {
+    // Update tags input when record tags change
+    if (record.tags && Array.isArray(record.tags)) {
+      setTagsInput(record.tags.map(tag => tag.name).join(', '));
+    }
+  }, [record.tags]);
+
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTagsInput(value);
+    
+    // Convert comma-separated tags to tag objects
+    const tagNames = value.split(',').map(name => name.trim()).filter(name => name);
+    const tags = tagNames.map(name => {
+      const existingTag = availableTags.find(tag => tag.name.toLowerCase() === name.toLowerCase());
+      return existingTag || { id: '', name, color: '#3B82F6', description: '' };
+    });
+    
+    // Update record tags
+    handleSelectChange('tags', JSON.stringify(tags));
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -125,6 +165,28 @@ const BasicInformationForm = ({
               onChange={handleParticipantsChange}
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="tags">
+            Tags <span className="text-muted-foreground text-sm">(comma separated)</span>
+          </Label>
+          <div className="relative">
+            <Tag className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="tags"
+              name="tags"
+              placeholder="meeting, finance, planning"
+              className="pl-8"
+              value={tagsInput}
+              onChange={handleTagsChange}
+            />
+          </div>
+          {availableTags.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Available tags: {availableTags.map(tag => tag.name).join(', ')}
+            </div>
+          )}
         </div>
         
         <div className="space-y-2">

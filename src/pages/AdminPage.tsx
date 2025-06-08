@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser } from '@/lib/auth';
 import { User } from '@/lib/types';
 import ActivityLogs from '@/components/admin/ActivityLogs';
+import AdminRecordsManagement from '@/components/admin/AdminRecordsManagement';
+import AdminTagsManagement from '@/components/admin/AdminTagsManagement';
 
 const AdminPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -50,15 +52,20 @@ const AdminPage = () => {
     <div className="p-4 sm:p-6 md:p-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-terracotta mb-6">Admin Dashboard</h1>
       
-      <Tabs defaultValue="activity" className="w-full">
+      <Tabs defaultValue="records" className="w-full">
         <TabsList className="mb-6">
-          <TabsTrigger value="activity">Activity Logs</TabsTrigger>
+          <TabsTrigger value="records">Records Management</TabsTrigger>
+          <TabsTrigger value="tags">Tags Management</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="settings">System Settings</TabsTrigger>
+          <TabsTrigger value="activity">Activity Logs</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="activity">
-          <ActivityLogs />
+        <TabsContent value="records">
+          <AdminRecordsManagement />
+        </TabsContent>
+        
+        <TabsContent value="tags">
+          <AdminTagsManagement />
         </TabsContent>
         
         <TabsContent value="users">
@@ -67,10 +74,8 @@ const AdminPage = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="settings">
-          <div className="text-center text-muted-foreground p-8">
-            System settings coming soon
-          </div>
+        <TabsContent value="activity">
+          <ActivityLogs />
         </TabsContent>
       </Tabs>
     </div>

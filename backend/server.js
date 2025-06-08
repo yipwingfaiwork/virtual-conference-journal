@@ -1,6 +1,7 @@
+
 const express = require('express');
 const cors = require('cors');
-const setupRoutes = require('./routes');
+const routes = require('./routes');
 const { testConnection } = require('./test-db');
 const setupMiddleware = require('./middleware');
 
@@ -26,7 +27,7 @@ async function startServer() {
   console.log('Database connection successful');
 
   setupMiddleware(app);
-  setupRoutes(app);
+  app.use('/', routes);
 
   const port = process.env.PORT || 5001;
   app.listen(port, () => {
