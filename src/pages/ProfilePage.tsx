@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Phone, MapPin, Building, Mail, Key, Save } from 'lucide-react';
@@ -23,7 +24,7 @@ const ProfilePage = () => {
     email: '',
     phone: '',
     address: '',
-    department: '',
+    departmentName: '',
   });
   
   const [passwords, setPasswords] = useState({
@@ -50,7 +51,7 @@ const ProfilePage = () => {
         email: userData.email,
         phone: userData.phone,
         address: userData.address,
-        department: userData.department,
+        departmentName: userData.departmentName,
       });
       setLoading(false);
     };
@@ -83,7 +84,7 @@ const ProfilePage = () => {
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
-        department: formData.department,
+        departmentName: formData.departmentName,
       });
       
       setUser(updatedUser);
@@ -232,15 +233,17 @@ const ProfilePage = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="departmentName">Department</Label>
                     <div className="relative">
                       <Building className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="department"
-                        name="department"
+                        id="departmentName"
+                        name="departmentName"
                         className="pl-8"
-                        value={formData.department}
+                        value={formData.departmentName}
                         onChange={handleInputChange}
+                        readOnly
+                        placeholder="Department information"
                       />
                     </div>
                   </div>
