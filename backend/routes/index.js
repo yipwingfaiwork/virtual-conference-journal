@@ -20,4 +20,6 @@ router.use('/tags', tagRoutes);
 router.use('/financial-periods', financialPeriodRoutes);
 router.use('/activity-logs', activityLogRoutes);
 
+console.log('All routes registered successfully');
+
 module.exports = router;

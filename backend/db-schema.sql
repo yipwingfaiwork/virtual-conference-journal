@@ -139,10 +139,10 @@ INSERT IGNORE INTO record_tags (recordId, tagId) VALUES
 (2, 8), -- Daily review -> routine
 (3, 4); -- Budget meeting -> budget
 
--- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_records_date ON records(date);
-CREATE INDEX IF NOT EXISTS idx_records_department ON records(departmentId);
-CREATE INDEX IF NOT EXISTS idx_records_created_by ON records(createdBy);
-CREATE INDEX IF NOT EXISTS idx_users_department ON users(departmentId);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(userId);
-CREATE INDEX IF NOT EXISTS idx_activity_logs_record ON activity_logs(recordId);
+-- Create indexes for performance (Azure MySQL compatible syntax)
+CREATE INDEX idx_records_date ON records(date);
+CREATE INDEX idx_records_department ON records(departmentId);
+CREATE INDEX idx_records_created_by ON records(createdBy);
+CREATE INDEX idx_users_department ON users(departmentId);
+CREATE INDEX idx_activity_logs_user ON activity_logs(userId);
+CREATE INDEX idx_activity_logs_record ON activity_logs(recordId);

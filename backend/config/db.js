@@ -1,3 +1,4 @@
+
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
@@ -29,14 +30,17 @@ const pool = mysql.createPool({
     minVersion: 'TLSv1.2',
     secureProtocol: 'TLSv1_2_method'
   },
-  connectionLimit: 10,
-  debug: true // 臨時啟用調試以檢查連線細節
+  connectionLimit: 10
 });
 
-pool.getConnection((err, conn) => {
-  if (err) console.error('Pool connection error:', err);
-  else console.log('Pool connection successful');
-  if (conn) conn.release();
-});
+// Test connection
+pool.getConnection()
+  .then(conn => {
+    console.log('Database pool connection successful');
+    conn.release();
+  })
+  .catch(err => {
+    console.error('Database pool connection error:', err);
+  });
 
 module.exports = pool;

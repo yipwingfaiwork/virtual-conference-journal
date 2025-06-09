@@ -5,6 +5,8 @@ const { logActivity } = require('../../utils/logger');
 // Create new record
 exports.createRecord = async (req, res) => {
   try {
+    console.log('Creating record with body:', req.body);
+    
     const {
       date, duration, department, title, participants, videoLink,
       textRecord, outline, remark, financialPeriodId, isPublic, isConfidential, tags
@@ -33,7 +35,9 @@ exports.createRecord = async (req, res) => {
       }
     }
     
-    // Insert record using departmentId
+    console.log('Using departmentId:', departmentId);
+    
+    // Insert record using departmentId (corrected SQL)
     const [result] = await db.query(
       `INSERT INTO records (date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -47,6 +51,7 @@ exports.createRecord = async (req, res) => {
     );
     
     const recordId = result.insertId;
+    console.log('Created record with ID:', recordId);
     
     // Handle tags if provided
     if (tags && Array.isArray(tags) && tags.length > 0) {
@@ -105,9 +110,15 @@ exports.updateRecord = async (req, res) => {
     let departmentId = req.user.departmentId; // Default to user's department
     
     if (department) {
-      const [depts] = await db.query('SELECT id FROM departments WHERE name = ?', [department]);
-      if (depts.length > 0) {
-        departmentId = depts[0].id;
+      // If department is a number, use it directly as departmentId
+      if (typeof department === 'number' || !isNaN(department)) {
+        departmentId = parseInt(department);
+      } else {
+        // If department is a string, find the department by name
+        const [depts] = await db.query('SELECT id FROM departments WHERE name = ?', [department]);
+        if (depts.length > 0) {
+          departmentId = depts[0].id;
+        }
       }
     }
     
