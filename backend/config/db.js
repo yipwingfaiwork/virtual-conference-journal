@@ -1,23 +1,7 @@
+
 const mysql = require('mysql2/promise');
-const fs = require('fs');
-const path = require('path');
 
-//const certPath = path.join(__dirname, 'certs', 'DigiCertGlobalRootCA.crt.pem');
-const certPath = '/home/site/wwwroot/backend/certs/DigiCertGlobalRootCA.crt.pem'; // 根據實際路徑調整
-console.log('Resolved SSL cert path in db.js:', certPath);
-let caCert;
-try {
-  caCert = fs.readFileSync(certPath);
-  console.log('SSL cert loaded successfully in db.js, length:', caCert.length);
-} catch (error) {
-  console.error('Failed to load SSL cert in db.js:', {
-    message: error.message,
-    stack: error.stack,
-    code: error.code
-  });
-  throw error;
-}
-
+// Simple database connection without SSL certificate
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -25,39 +9,50 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
   ssl: {
-    ca: caCert,
-    rejectUnauthorized: false // 臨時禁用嚴格驗證
+    rejectUnauthorized: false // Allow self-signed certificates for Azure MySQL
   },
-  /*
-  ssl: {
-    ca: caCert,
-    rejectUnauthorized: true,
-    minVersion: 'TLSv1.2',
-    secureProtocol: 'TLSv1_2_method'
-  },
-  */
-  connectionLimit: 10
+  connectionLimit: 10,
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true
 });
 
-// 定義 testConnection 函數
+// Test connection function
 async function testConnection() {
   let connection;
   try {
+    console.log('Testing database connection...');
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_NAME:', process.env.DB_NAME);
+    console.log('DB_USER:', process.env.DB_USER);
+    console.log('DB_PORT:', process.env.DB_PORT);
+    
     connection = await pool.getConnection();
     console.log('Database connection test successful');
+    
+    // Test a simple query
+    const [rows] = await connection.query('SELECT 1 as test');
+    console.log('Database query test successful:', rows);
+    
     return true;
   } catch (err) {
-    console.error('Database connection test failed:', err);
+    console.error('Database connection test failed:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage
+    });
     return false;
   } finally {
     if (connection) connection.release();
   }
 }
 
-// 初始連線測試
-testConnection().catch(err => {
-  console.error('Initial database pool connection error:', err);
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
 });
 
-// 導出 pool 和 testConnection
+// Export pool and testConnection
 module.exports = { pool, testConnection };

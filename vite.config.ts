@@ -8,7 +8,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 5001,
+    port: 8080,
   },
   base: './', // Use relative paths
   build: {
