@@ -9,9 +9,23 @@ import { Edit, Trash2, Plus, Search, UserCheck, UserX } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Department } from '@/lib/types';
+import { Department } from '@/lib/types';
 import apiClient from '@/services/api-service';
 import { useToast } from '@/hooks/use-toast';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  departmentId: string;
+  departmentName: string;
+  isAdmin: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const AdminUsersManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -28,7 +42,7 @@ const AdminUsersManagement = () => {
       email: '',
       phone: '',
       address: '',
-      department: '',
+      departmentId: '',
       isAdmin: false,
       isActive: true,
     },
@@ -72,7 +86,7 @@ const AdminUsersManagement = () => {
       email: user.email,
       phone: user.phone,
       address: user.address,
-      department: user.department,
+      departmentId: user.departmentId,
       isAdmin: user.isAdmin,
       isActive: user.isActive,
     });
@@ -86,7 +100,7 @@ const AdminUsersManagement = () => {
       email: '',
       phone: '',
       address: '',
-      department: '',
+      departmentId: '',
       isAdmin: false,
       isActive: true,
     });
@@ -164,7 +178,7 @@ const AdminUsersManagement = () => {
   const filteredUsers = users.filter(user =>
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.department?.toLowerCase().includes(searchTerm.toLowerCase())
+    user.departmentName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -249,7 +263,7 @@ const AdminUsersManagement = () => {
                   
                   <FormField
                     control={form.control}
-                    name="department"
+                    name="departmentId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Department</FormLabel>
@@ -261,7 +275,7 @@ const AdminUsersManagement = () => {
                           </FormControl>
                           <SelectContent>
                             {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.name}>
+                              <SelectItem key={dept.id} value={dept.id}>
                                 {dept.name}
                               </SelectItem>
                             ))}
@@ -320,7 +334,7 @@ const AdminUsersManagement = () => {
               <TableRow key={user.id}>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.department}</TableCell>
+                <TableCell>{user.departmentName}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     user.isActive 

@@ -4,12 +4,26 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentUser } from '@/lib/auth';
 import { useRecords } from '@/hooks/use-records';
 import { useCreatorNames } from '@/hooks/use-creator-names';
-import { SearchFilters, Tag, FinancialPeriod, User, CalendarEvent } from '@/lib/types';
+import { SearchFilters, Tag, FinancialPeriod, CalendarEvent } from '@/lib/types';
 import apiClient from '@/services/api-service';
 import RecordHeader from '@/components/records/RecordHeader';
 import EnhancedRecordSearchBar from '@/components/records/EnhancedRecordSearchBar';
 import RecordsTable from '@/components/records/RecordsTable';
 import CalendarView from '@/components/records/CalendarView';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  departmentId: string;
+  departmentName: string;
+  isAdmin: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const RecordsPage = () => {
   const navigate = useNavigate();
@@ -42,9 +56,9 @@ const RecordsPage = () => {
     const fetchDropdownData = async () => {
       try {
         const [tagsRes, periodsRes, usersRes] = await Promise.all([
-          apiClient.get('/tags'),
-          apiClient.get('/financial-periods'),
-          apiClient.get('/users')
+          apiClient.get('/tags').catch(() => ({ data: [] })),
+          apiClient.get('/financial-periods').catch(() => ({ data: [] })),
+          apiClient.get('/users').catch(() => ({ data: [] }))
         ]);
         
         setTags(tagsRes.data);

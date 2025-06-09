@@ -10,12 +10,12 @@ interface DepartmentStatsProps {
 }
 
 const DashboardDepartmentStats = ({ isLoading, error, records = [] }: DepartmentStatsProps) => {
-  // Get department stats
+  // Get department stats using departmentName instead of department
   const departmentStats = records && Array.isArray(records)
-    ? ['Operations', 'Finance', 'Management', 'Administration'].map(dept => ({
+    ? ['Operations', 'Finance', 'Management', 'Administration', 'Marketing', 'HR'].map(dept => ({
         name: dept,
         count: records.filter(record => record.department === dept).length
-      }))
+      })).filter(dept => dept.count > 0)
     : [];
     
   return (

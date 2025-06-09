@@ -5,8 +5,8 @@ export interface User {
   email: string;
   phone: string;
   address: string;
-  department: string;
   departmentId: string;
+  departmentName: string;
   isAdmin: boolean;
   isActive: boolean;
   createdAt: string;
