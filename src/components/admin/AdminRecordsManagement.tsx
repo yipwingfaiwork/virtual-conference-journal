@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import apiClient from '@/services/api-service';
 import { useToast } from '@/hooks/use-toast';
 
 const AdminRecordsManagement = () => {
+  const navigate = useNavigate();
   const [records, setRecords] = useState<ConferenceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +36,14 @@ const AdminRecordsManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (id: string) => {
+    navigate(`/records/edit/${id}`);
+  };
+
+  const handleAdd = () => {
+    navigate('/records/new');
   };
 
   const handleDelete = async (id: string) => {
@@ -70,7 +80,7 @@ const AdminRecordsManagement = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Records Management
-          <Button>
+          <Button onClick={handleAdd}>
             <Plus className="w-4 h-4 mr-2" />
             Add Record
           </Button>
@@ -108,7 +118,11 @@ const AdminRecordsManagement = () => {
                 <TableCell>{record.createdBy}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEdit(record.id)}
+                    >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button 

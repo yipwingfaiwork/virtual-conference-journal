@@ -12,10 +12,46 @@ relax-hotel-system/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ui/ (shadcn/ui 元件)
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── dialog.tsx
+│   │   │   │   ├── form.tsx
+│   │   │   │   ├── input.tsx
+│   │   │   │   ├── table.tsx
+│   │   │   │   ├── tabs.tsx
+│   │   │   │   └── ... (其他 UI 元件)
 │   │   │   ├── admin/ (管理員元件)
+│   │   │   │   ├── ActivityLogs.tsx
+│   │   │   │   ├── AdminDepartmentsManagement.tsx
+│   │   │   │   ├── AdminRecordsManagement.tsx
+│   │   │   │   ├── AdminTagsManagement.tsx
+│   │   │   │   └── AdminUsersManagement.tsx
 │   │   │   ├── dashboard/ (儀表板元件)
+│   │   │   │   ├── DashboardChart.tsx
+│   │   │   │   ├── DashboardDepartmentStats.tsx
+│   │   │   │   ├── DashboardHeader.tsx
+│   │   │   │   ├── DashboardQuickLinks.tsx
+│   │   │   │   ├── DashboardQuickSearch.tsx
+│   │   │   │   └── DashboardRecentRecords.tsx
 │   │   │   ├── forms/ (表單元件)
+│   │   │   │   ├── BasicInformationForm.tsx
+│   │   │   │   ├── FormActions.tsx
+│   │   │   │   ├── OutlineForm.tsx
+│   │   │   │   └── TextRecordForm.tsx
 │   │   │   ├── records/ (記錄相關元件)
+│   │   │   │   ├── CalendarView.tsx
+│   │   │   │   ├── EnhancedRecordSearchBar.tsx
+│   │   │   │   ├── RecordChangeHistory.tsx
+│   │   │   │   ├── RecordConferenceDetails.tsx
+│   │   │   │   ├── RecordContentSections.tsx
+│   │   │   │   ├── RecordDetailHeader.tsx
+│   │   │   │   ├── RecordHeader.tsx
+│   │   │   │   ├── RecordParticipants.tsx
+│   │   │   │   ├── RecordResources.tsx
+│   │   │   │   ├── RecordSearchBar.tsx
+│   │   │   │   ├── RecordTableRow.tsx
+│   │   │   │   └── RecordsTable.tsx
+│   │   │   ├── AccessLevelBadge.tsx
 │   │   │   ├── Navbar.tsx
 │   │   │   └── Footer.tsx
 │   │   ├── pages/
@@ -28,7 +64,8 @@ relax-hotel-system/
 │   │   │   ├── RecordForm.tsx (新增/編輯記錄)
 │   │   │   ├── ProfilePage.tsx (個人資料)
 │   │   │   ├── AdminPage.tsx (管理員面板)
-│   │   │   └── NotFoundPage.tsx (404頁面)
+│   │   │   ├── NotFoundPage.tsx (404頁面)
+│   │   │   └── NotFound.tsx
 │   │   ├── services/
 │   │   │   ├── api-service.ts (API 呼叫)
 │   │   │   ├── auth-service.ts (驗證服務)
@@ -36,8 +73,13 @@ relax-hotel-system/
 │   │   ├── lib/
 │   │   │   ├── auth.ts (驗證相關)
 │   │   │   ├── types.ts (TypeScript 類型)
-│   │   │   └── utils.ts (通用工具)
+│   │   │   ├── utils.ts (通用工具)
+│   │   │   └── db-config.ts (資料庫配置)
 │   │   ├── hooks/ (自定義 React Hooks)
+│   │   │   ├── use-creator-names.ts
+│   │   │   ├── use-mobile.tsx
+│   │   │   ├── use-records.ts
+│   │   │   └── use-toast.ts
 │   │   └── App.tsx (主應用程式)
 │   └── public/
 └── backend/ (Node.js + Express + MySQL)
@@ -67,12 +109,24 @@ relax-hotel-system/
     │   ├── auth.js (驗證中介軟體)
     │   └── index.js (中介軟體聚合)
     ├── config/
-    │   └── db.js (資料庫配置)
+    │   ├── db.js (資料庫配置)
+    │   └── certs/ (SSL 憑證)
     ├── utils/
     │   └── logger.js (日誌工具)
     ├── db-schema.sql (資料庫架構)
     └── server.js (主伺服器檔案)
 ```
+
+### 資料庫架構和欄位對應
+**重要：前端和後端的欄位對應關係**
+
+| 前端 TypeScript 類型 | 資料庫欄位 | 說明 |
+|---------------------|-----------|------|
+| `User.departmentId` | `users.departmentId` | 部門ID（外鍵） |
+| `User.departmentName` | `departments.name` | 部門名稱（透過JOIN取得） |
+| `ConferenceRecord.departmentId` | `records.departmentId` | 記錄所屬部門ID |
+| `ConferenceRecord.department` | `departments.name` | 部門名稱（透過JOIN取得） |
+| `ConferenceRecord.accessLevel` | 計算欄位 | 基於 `isPublic` 和 `isConfidential` 計算 |
 
 ### 主要功能
 - **使用者管理**: 註冊、登入、權限控制
@@ -99,13 +153,13 @@ relax-hotel-system/
 - bcrypt (密碼加密)
 
 ### 資料庫架構
-- **users**: 使用者資料
-- **departments**: 部門資料
-- **records**: 會議記錄
-- **tags**: 標籤系統
-- **record_tags**: 記錄標籤關聯
-- **financial_periods**: 財務期間
-- **activity_logs**: 活動日誌
+- **users**: 使用者資料 (id, name, email, phone, address, departmentId, isAdmin, isActive)
+- **departments**: 部門資料 (id, name, description)
+- **records**: 會議記錄 (id, date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential)
+- **tags**: 標籤系統 (id, name, color, description)
+- **record_tags**: 記錄標籤關聯 (recordId, tagId)
+- **financial_periods**: 財務期間 (id, name, startDate, endDate, isActive)
+- **activity_logs**: 活動日誌 (id, userId, action, details, recordId, timestamp)
 
 ### 部署步驟
 
@@ -126,6 +180,7 @@ relax-hotel-system/
    - `DB_USER`: 資料庫使用者
    - `DB_PASSWORD`: 資料庫密碼
    - `DB_NAME`: 資料庫名稱
+   - `DB_PORT`: 資料庫埠號
    - `JWT_SECRET`: JWT 密鑰
    - `PORT`: 伺服器埠號 (預設 5001)
 3. 啟動伺服器: `npm start`
@@ -171,10 +226,21 @@ relax-hotel-system/
 - 更新安全性套件
 
 ### 疑難排解
-- 檢查資料庫連線設定
-- 確認環境變數正確設定
-- 查看伺服器日誌檔案
-- 驗證 API 端點可用性
+#### 常見錯誤
+
+1. **"Unknown column 'department'"**
+   - 問題：SQL 查詢使用了不存在的欄位
+   - 解決：使用 `departmentId` 並透過 JOIN 取得 `departmentName`
+
+2. **"Unknown column 'accessLevel'"**
+   - 問題：資料庫中沒有 `accessLevel` 欄位
+   - 解決：基於 `isPublic` 和 `isConfidential` 計算 `accessLevel`
+
+3. **404 或 500 錯誤**
+   - 檢查資料庫連線設定
+   - 確認環境變數正確設定
+   - 查看伺服器日誌檔案
+   - 驗證 API 端點可用性
 
 ### 聯絡資訊
 如有部署相關問題，請聯絡系統管理員。
