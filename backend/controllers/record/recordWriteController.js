@@ -1,3 +1,4 @@
+
 const db = require('../../config/db');
 const { logActivity } = require('../../utils/logger');
 
@@ -16,17 +17,23 @@ exports.createRecord = async (req, res) => {
       return res.status(400).json({ error: 'Date, duration, and title are required' });
     }
     
-    // Find department ID by name
+    // Find department ID by name if department is provided as string
     let departmentId = req.user.departmentId; // Default to user's department
     
     if (department) {
-      const [depts] = await db.query('SELECT id FROM departments WHERE name = ?', [department]);
-      if (depts.length > 0) {
-        departmentId = depts[0].id;
+      // If department is a number, use it directly as departmentId
+      if (typeof department === 'number' || !isNaN(department)) {
+        departmentId = parseInt(department);
+      } else {
+        // If department is a string, find the department by name
+        const [depts] = await db.query('SELECT id FROM departments WHERE name = ?', [department]);
+        if (depts.length > 0) {
+          departmentId = depts[0].id;
+        }
       }
     }
     
-    // Insert record using departmentId instead of department name
+    // Insert record using departmentId
     const [result] = await db.query(
       `INSERT INTO records (date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

@@ -1,32 +1,23 @@
 
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
-const bcrypt = require('bcrypt');
 
-// Import sub-route modules
-const recordRoutes = require('./records');
-const userRoutes = require('./users');
-const tagRoutes = require('./tags');
-const departmentRoutes = require('./departments');
-const activityLogRoutes = require('./activity-logs');
+// Import route modules
 const authRoutes = require('./auth');
+const userRoutes = require('./users');
+const recordRoutes = require('./records');
+const departmentRoutes = require('./departments');
+const tagRoutes = require('./tags');
 const financialPeriodRoutes = require('./financial-periods');
+const activityLogRoutes = require('./activity-logs');
 
-router.get('/api/health', (req, res) => {
-  console.log('Health check requested');
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Auth routes (no authentication required)
-router.use('/api/auth', authRoutes);
-
-// Protected routes (authentication required)
-router.use('/api/records', recordRoutes);
-router.use('/api/users', userRoutes);
-router.use('/api/tags', tagRoutes);
-router.use('/api/departments', departmentRoutes);
-router.use('/api/activity-logs', activityLogRoutes);
-router.use('/api/financial-periods', financialPeriodRoutes);
+// Register routes
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
+router.use('/records', recordRoutes);
+router.use('/departments', departmentRoutes);
+router.use('/tags', tagRoutes);
+router.use('/financial-periods', financialPeriodRoutes);
+router.use('/activity-logs', activityLogRoutes);
 
 module.exports = router;
