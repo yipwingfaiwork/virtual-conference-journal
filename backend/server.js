@@ -2,7 +2,8 @@
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
-const { testConnection } = require('./test-db');
+//const { testConnection } = require('./test-db');
+const { testConnection } = require('./config/db');
 const setupMiddleware = require('./middleware');
 
 const app = express();

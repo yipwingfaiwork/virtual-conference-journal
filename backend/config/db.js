@@ -1,4 +1,3 @@
-
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
@@ -25,6 +24,10 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
+  ssl: {
+    ca: caCert,
+    rejectUnauthorized: false // 臨時禁用嚴格驗證
+  },
   /*
   ssl: {
     ca: caCert,
@@ -33,21 +36,28 @@ const pool = mysql.createPool({
     secureProtocol: 'TLSv1_2_method'
   },
   */
-  ssl: {
-    ca: caCert,
-    rejectUnauthorized: false // 臨時禁用嚴格驗證
-  },
   connectionLimit: 10
 });
 
-// Test connection
-pool.getConnection()
-  .then(conn => {
-    console.log('Database pool connection successful');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('Database pool connection error:', err);
-  });
+// 定義 testConnection 函數
+async function testConnection() {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    console.log('Database connection test successful');
+    return true;
+  } catch (err) {
+    console.error('Database connection test failed:', err);
+    return false;
+  } finally {
+    if (connection) connection.release();
+  }
+}
 
-module.exports = pool;
+// 初始連線測試
+testConnection().catch(err => {
+  console.error('Initial database pool connection error:', err);
+});
+
+// 導出 pool 和 testConnection
+module.exports = { pool, testConnection };
