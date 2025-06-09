@@ -3,7 +3,8 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-const certPath = path.join(__dirname, 'certs', 'DigiCertGlobalRootCA.crt.pem');
+//const certPath = path.join(__dirname, 'certs', 'DigiCertGlobalRootCA.crt.pem');
+const certPath = '/home/site/wwwroot/backend/certs/DigiCertGlobalRootCA.crt.pem'; // 根據實際路徑調整
 console.log('Resolved SSL cert path in db.js:', certPath);
 let caCert;
 try {
