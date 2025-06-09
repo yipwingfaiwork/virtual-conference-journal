@@ -25,11 +25,17 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
+  /*
   ssl: {
     ca: caCert,
     rejectUnauthorized: true,
     minVersion: 'TLSv1.2',
     secureProtocol: 'TLSv1_2_method'
+  },
+  */
+  ssl: {
+    ca: caCert,
+    rejectUnauthorized: false // 臨時禁用嚴格驗證
   },
   connectionLimit: 10
 });
