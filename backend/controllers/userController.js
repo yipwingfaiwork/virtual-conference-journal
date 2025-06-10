@@ -1,11 +1,11 @@
 
 const pool = require('../config/db');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt'); // 使用 bcrypt 而不是 bcryptjs
 
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
-    const [users] = await pool.execute(`
+    const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -27,7 +27,7 @@ exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const [users] = await pool.execute(`
+    const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -54,7 +54,7 @@ exports.createUser = async (req, res) => {
     const { name, email, password, phone, address, departmentId, isAdmin } = req.body;
     
     // Check if user already exists
-    const [existingUsers] = await pool.execute(
+    const [existingUsers] = await pool.query(
       'SELECT id FROM users WHERE email = ?', 
       [email]
     );
@@ -67,14 +67,14 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Create user
-    const [result] = await pool.execute(
+    const [result] = await pool.query(
       `INSERT INTO users (name, email, password, phone, address, departmentId, isAdmin) 
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [name, email, hashedPassword, phone || null, address || null, departmentId || null, isAdmin || false]
     );
     
     // Get created user
-    const [users] = await pool.execute(`
+    const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -98,7 +98,7 @@ exports.updateUser = async (req, res) => {
     const { name, email, phone, address, departmentId, isAdmin, isActive, password } = req.body;
     
     // Check if user exists
-    const [existingUsers] = await pool.execute('SELECT id FROM users WHERE id = ?', [id]);
+    const [existingUsers] = await pool.query('SELECT id FROM users WHERE id = ?', [id]);
     if (existingUsers.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -120,10 +120,10 @@ exports.updateUser = async (req, res) => {
     updateQuery += ' WHERE id = ?';
     params.push(id);
     
-    await pool.execute(updateQuery, params);
+    await pool.query(updateQuery, params);
     
     // Get updated user
-    const [users] = await pool.execute(`
+    const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -146,16 +146,50 @@ exports.deleteUser = async (req, res) => {
     const { id } = req.params;
     
     // Check if user exists
-    const [existingUsers] = await pool.execute('SELECT id FROM users WHERE id = ?', [id]);
+    const [existingUsers] = await pool.query('SELECT id FROM users WHERE id = ?', [id]);
     if (existingUsers.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
     
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Failed to delete user' });
+  }
+};
+
+// Change password
+exports.changePassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { oldPassword, newPassword } = req.body;
+    
+    // Get user's current password
+    const [users] = await pool.query('SELECT password FROM users WHERE id = ?', [id]);
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Verify old password
+    const isValidPassword = await bcrypt.compare(oldPassword, users[0].password);
+    if (!isValidPassword) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await pool.query(
+      'UPDATE users SET password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?',
+      [hashedNewPassword, id]
+    );
+    
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ error: 'Failed to change password' });
   }
 };
