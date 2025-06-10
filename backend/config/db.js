@@ -12,7 +12,14 @@ const pool = mysql.createPool({
     rejectUnauthorized: false // Azure MySQL Flexible Server with require_secure_transport: OFF
   },
   connectionLimit: 10,
-  charset: 'utf8mb4'
+  charset: 'utf8mb4',
+  multipleStatements: false,
+  namedPlaceholders: true
+});
+
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
 });
 
 // Test connection function
@@ -47,10 +54,6 @@ async function testConnection() {
   }
 }
 
-// Handle pool errors
-pool.on('error', (err) => {
-  console.error('Database pool error:', err);
-});
-
-// Export both pool and query method for compatibility
+// Export pool as default and testConnection as named export
 module.exports = pool;
+module.exports.testConnection = testConnection;

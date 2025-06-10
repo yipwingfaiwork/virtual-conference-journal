@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { query } = require('../config/db');
+const pool = require('../config/db');
 const { logActivity } = require('../utils/logger');
 
 // Login
@@ -16,7 +16,7 @@ exports.login = async (req, res) => {
     }
     
     // Get user with department info
-    const [users] = await query(`
+    const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.password, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -90,7 +90,7 @@ exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.userId;
     
-    const [users] = await query(`
+    const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,

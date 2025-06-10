@@ -44,26 +44,54 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Critical Issues and Solutions
+
+### Backend Server Startup Issues
+
+**Problem 1: testConnection is not a function**
+- **Error**: `TypeError: testConnection is not a function at startServer`
+- **Root Cause**: Incorrect import/export in server.js and db.js
+- **Solution**: 
+  - Modified `server.js` to define `testConnection` locally
+  - Fixed `db.js` exports to include both pool and testConnection
+  - Ensured proper module imports
+
+**Problem 2: bcrypt vs bcryptjs Conflicts**
+- **Error**: `Cannot find module 'bcryptjs'`
+- **Root Cause**: Code inconsistency between bcrypt and bcryptjs
+- **Solution**: Standardized on `bcrypt` module throughout codebase
+
+**Problem 3: pool.execute vs pool.query**
+- **Error**: `pool.execute is not a function`
+- **Root Cause**: Using wrong method name for mysql2 pool
+- **Solution**: Changed all `pool.execute` to `pool.query`
+
+### CORS Configuration Issues
+
+**Problem**: CORS blocking frontend requests
+- **Error**: `No 'Access-Control-Allow-Origin' header is present`
+- **Solution**: Updated CORS middleware to properly handle Azure Static Web App origins
+
 ## Project File Structure
 
 ```
 relax-hotel-system/
 ├── backend/                              # Node.js 後端服務
 │   ├── config/
-│   │   └── db.js                        # 資料庫連接配置
+│   │   └── db.js                        # 資料庫連接配置 (FIXED)
 │   ├── controllers/                     # 控制器層
-│   │   ├── authController.js            # 認證控制器
-│   │   ├── userController.js            # 用戶管理
-│   │   ├── activityLogController.js     # 活動日誌
-│   │   ├── departmentController.js      # 部門管理
-│   │   ├── tagController.js             # 標籤管理
-│   │   ├── financialPeriodController.js # 財務期間
+│   │   ├── authController.js            # 認證控制器 (FIXED)
+│   │   ├── userController.js            # 用戶管理 (FIXED)
+│   │   ├── activityLogController.js     # 活動日誌 (FIXED)
+│   │   ├── departmentController.js      # 部門管理 (FIXED)
+│   │   ├── tagController.js             # 標籤管理 (FIXED)
+│   │   ├── financialPeriodController.js # 財務期間 (FIXED)
 │   │   └── record/                      # 記錄相關
-│   │       ├── recordReadController.js  # 讀取記錄
-│   │       ├── recordWriteController.js # 寫入記錄
+│   │       ├── recordReadController.js  # 讀取記錄 (FIXED)
+│   │       ├── recordWriteController.js # 寫入記錄 (FIXED)
 │   │       └── recordChangeController.js# 記錄變更
 │   ├── middleware/                      # 中間件
-│   │   ├── index.js                     # 主要中間件設置
+│   │   ├── index.js                     # 主要中間件設置 (FIXED)
 │   │   └── auth.js                      # 認證中間件
 │   ├── routes/                          # 路由定義
 │   │   ├── index.js                     # 主路由
@@ -75,13 +103,13 @@ relax-hotel-system/
 │   │   ├── financial-periods.js         # 財務期間路由
 │   │   └── activity-logs.js             # 活動日誌路由
 │   ├── services/                        # 服務層
-│   │   ├── recordService.js             # 記錄服務
-│   │   ├── activityLogService.js        # 活動日誌服務
+│   │   ├── recordService.js             # 記錄服務 (FIXED)
+│   │   ├── activityLogService.js        # 活動日誌服務 (FIXED)
 │   │   └── tagService.js                # 標籤服務
 │   ├── utils/
 │   │   └── logger.js                    # 日誌工具
 │   ├── package.json                     # 依賴配置
-│   ├── server.js                        # 服務器入口
+│   ├── server.js                        # 服務器入口 (FIXED)
 │   └── db-schema.sql                    # 資料庫結構
 ├── src/                                 # React 前端
 │   ├── components/                      # 組件
@@ -102,7 +130,7 @@ relax-hotel-system/
 │   │   ├── ProfilePage.tsx             # 個人資料
 │   │   └── AdminPage.tsx               # 管理頁面
 │   ├── services/                       # 服務
-│   │   ├── api-service.ts              # API 服務
+│   │   ├── api-service.ts              # API 服務 (FIXED)
 │   │   ├── auth-service.ts             # 認證服務
 │   │   └── permission-service.ts       # 權限服務
 │   ├── lib/                           # 工具庫
@@ -111,29 +139,19 @@ relax-hotel-system/
 │   │   └── auth.ts                     # 認證工具
 │   ├── hooks/                         # 自定義 Hook
 │   └── App.tsx                        # 應用主組件
-├── .env                               # 生產環境變數
-├── .env.local                         # 本地開發環境變數
-├── vite.config.ts                     # Vite 配置
+├── .env                               # 生產環境變數 (FIXED)
+├── .env.local                         # 本地開發環境變數 (FIXED)
+├── vite.config.ts                     # Vite 配置 (FIXED)
 ├── package.json                       # 前端依賴
-└── DEPLOYMENT_GUIDE.md               # 本文件
+└── DEPLOYMENT_GUIDE.md               # 本文件 (UPDATED)
 ```
-
-## Database Schema
-
-### Core Tables
-- **users**: 用戶資料 (id, name, email, password, departmentId, isAdmin, isActive)
-- **departments**: 部門資料 (id, name, description)
-- **records**: 會議記錄 (id, title, content, createdById, departmentId, tags, financialPeriod)
-- **tags**: 標籤系統 (id, name, color, description)
-- **financial_periods**: 財務期間 (id, name, startDate, endDate)
-- **activity_logs**: 活動日誌 (id, userId, action, details, recordId, timestamp)
 
 ## Installation and Setup
 
 ### Prerequisites
 
 - Node.js 20.x or later
-- npm 或 yarn package manager
+- npm package manager
 - MySQL client (for database setup)
 - Azure CLI (for deployment)
 - Git
@@ -162,7 +180,7 @@ relax-hotel-system/
    npm install
    
    # 測試資料庫連接
-   node -e "require('./config/db').testConnection();"
+   node -e "const {testConnection} = require('./config/db'); testConnection();"
    ```
 
 4. **Frontend Setup**
@@ -209,138 +227,94 @@ VITE_API_URL=http://localhost:5001/api
 NODE_ENV=development
 ```
 
-## Port Configuration
+## Troubleshooting Guide
 
-- **Frontend Development Server**: Port 8080 (Vite)
-- **Backend API Server**: Port 5001 (Express.js)
-- **Database Server**: Port 3306 (MySQL)
+### 1. Server Startup Issues
 
-These ports do not conflict as they serve different purposes:
-- Port 8080: 本地前端開發，具有熱重載功能
-- Port 5001: 後端 API 服務器（本地和 Azure）
-- Port 3306: 資料庫連接
-
-## Azure Deployment Configuration
-
-### 1. Database Setup (Azure MySQL Flexible Server)
-
-**Server Details:**
-- Host: `hoteldb.mysql.database.azure.com`
-- Port: 3306
-- Database: `relax_hotel_system`
-- Admin User: `dba`
-- Password: `Lezykgu1`
-
-**Security Settings:**
-- Public access: Enabled
-- Firewall: Allow Azure services + specific IP addresses
-- require_secure_transport: OFF (SSL optional)
-
-### 2. Backend Deployment (Azure Web App Service)
-
-**App Service Configuration:**
-- Name: `n8n-api`
-- URL: `https://n8n-api-d3b9a0f3g4a3e4dc.uksouth-01.azurewebsites.net`
-- Runtime: Node.js 20 LTS
-- Port: 5001
-
-**Environment Variables:**
-```json
-{
-  "NODE_ENV": "production",
-  "PORT": "5001",
-  "DB_HOST": "hoteldb.mysql.database.azure.com",
-  "DB_NAME": "relax_hotel_system",
-  "DB_USER": "dba",
-  "DB_PASSWORD": "Lezykgu1",
-  "DB_PORT": "3306",
-  "JWT_SECRET": "relaxhotelkey"
-}
+**Error: `testConnection is not a function`**
+```bash
+# Fix: Check server.js imports and db.js exports
+# Ensure testConnection is properly defined and exported
 ```
 
-**重要依賴要求:**
-- 確保 package.json 包含所有必需的依賴項
-- 使用 `bcrypt` 而不是 `bcryptjs` 進行密碼加密
-- 確保所有 Node 模組在部署時可用
-
-### 3. Frontend Deployment (Azure Static Web App)
-
-**Static Web App Configuration:**
-- Name: `relax-hotel-system`
-- URL: `https://lemon-moss-03941a703.6.azurestaticapps.net`
-- Build Output: `dist`
-
-**Environment Variables:**
-```json
-{
-  "VITE_API_URL": "https://n8n-api-d3b9a0f3g4a3e4dc.uksouth-01.azurewebsites.net/api"
-}
+**Error: `Cannot find module 'bcryptjs'`**
+```bash
+# Fix: Use 'bcrypt' instead of 'bcryptjs'
+npm uninstall bcryptjs
+npm install bcrypt
+# Update all requires to use 'bcrypt'
 ```
 
-## Troubleshooting Common Issues
+**Error: `pool.execute is not a function`**
+```bash
+# Fix: Use pool.query instead of pool.execute
+# Update all database operations in controllers
+```
 
-### 1. Module Not Found Errors (Azure Deployment)
-
-**症狀:** `Cannot find module 'bcryptjs'` 或類似錯誤
-
-**解決方案:**
-- 檢查 backend/package.json 包含所有依賴項
-- 確保部署包包含完整的 node_modules
-- 使用 `bcrypt` 替代 `bcryptjs`
-- 重新部署確保所有依賴項已安裝
-
-### 2. CORS Issues
-
-**症狀:** `Access to XMLHttpRequest has been blocked by CORS policy`
-
-**解決方案:**
-- 檢查 backend/middleware/index.js 中的 CORS 設置
-- 確保 Azure Static Web App URL 在允許來源列表中
-- 驗證預檢請求處理是否正確
-
-### 3. Database Connection Issues
+### 2. Database Connection Issues
 
 **Local Development:**
-- 確保你的 IP 已添加到 Azure MySQL 防火牆規則
-- 檢查是否啟用了"允許 Azure 服務"
-- 驗證 .env 文件中的憑證
+```bash
+# Test database connection
+node -e "const pool = require('./backend/config/db'); pool.getConnection().then(conn => {console.log('Connected'); conn.release();}).catch(console.error);"
+```
 
 **Azure Deployment:**
-- 檢查 Web App 環境變數
-- 監控 Azure 日誌: `az webapp log tail --resource-group n8n --name n8n-api`
+```bash
+# Check Azure Web App logs
+az webapp log tail --resource-group n8n --name n8n-api
 
-### 4. API Connection Issues
+# Check environment variables
+az webapp config appsettings list --resource-group n8n --name n8n-api
+```
+
+### 3. CORS Issues
 
 **Frontend can't reach API:**
-- 檢查環境變數中的 VITE_API_URL
-- 確保生產環境使用 HTTPS 的 API URL
-- 驗證後端的 CORS 配置
+```bash
+# Check CORS configuration in backend/middleware/index.js
+# Ensure Azure Static Web App URL is in allowedOrigins
+# Verify preflight request handling
+```
 
-**Network Errors:**
-- 檢查 Azure Web App 是否正在運行
-- 驗證 API 端點是否可訪問
-- 監控瀏覽器開發工具中的特定錯誤
+### 4. 503 Service Unavailable
 
-### 5. Authentication Issues
+**Symptoms:** API returns 503, server restarts on requests
+```bash
+# Check for:
+# 1. Unhandled exceptions in code
+# 2. Missing dependencies
+# 3. Database connection failures
+# 4. Memory issues
+```
 
-**Login failures:**
-- 檢查環境間的 JWT_SECRET 是否匹配
-- 驗證用戶是否存在於資料庫中
-- 監控後端日誌中的認證錯誤
+### 5. API Timeout Issues
 
-### 6. Build and Deployment Issues
+**Frontend timeouts (30s):**
+```bash
+# Check:
+# 1. Backend server is running
+# 2. Database queries are not hanging
+# 3. Network connectivity
+# 4. Azure App Service health
+```
 
-**Frontend build fails:**
-- 檢查環境變數是否設置
-- 驗證所有導入和依賴項
-- 本地測試構建: `npm run build`
+## Security Considerations
 
-**Backend deployment fails:**
-- 檢查 package.json scripts
-- 驗證 Node.js 版本兼容性
-- 監控 GitHub Actions 日誌
+- JWT tokens 在 24 小時後過期
+- 密碼使用 bcrypt 進行哈希
+- CORS 配置為特定來源
+- 環境變數在 Azure 中受保護
+- 資料庫使用參數化查詢防止 SQL 注入
 
-## Development Commands
+## Monitoring and Logs
+
+- **Azure Application Insights**: 啟用錯誤跟踪
+- **Azure Web App Logs**: `az webapp log tail --resource-group n8n --name n8n-api`
+- **Database Monitoring**: 通過 Azure Portal 可用
+- **Frontend Logs**: 瀏覽器開發工具和控制台
+
+## Common Commands
 
 ```bash
 # Backend development
@@ -356,6 +330,9 @@ npm run preview     # 預覽生產構建
 
 # Database operations
 mysql -h hoteldb.mysql.database.azure.com -u dba -p relax_hotel_system
+
+# Azure deployment
+git push origin main  # Triggers Azure deployment
 ```
 
 ## API Testing
@@ -373,45 +350,4 @@ curl -X POST http://localhost:5001/api/auth/login \
   -d '{"email":"admin@example.com","password":"pw1234"}'
 ```
 
-## Security Considerations
-
-- JWT tokens 在 24 小時後過期
-- 密碼使用 bcrypt 進行哈希
-- CORS 配置為特定來源
-- 環境變數在 Azure 中受保護
-- 資料庫使用參數化查詢防止 SQL 注入
-
-## Performance Optimization
-
-### Backend Optimization
-- 使用連接池進行資料庫操作
-- 實施適當的索引策略
-- 啟用 gzip 壓縮
-- 設置適當的快取標頭
-
-### Frontend Optimization
-- 實施代碼分割
-- 使用 React.memo 進行組件優化
-- 懶加載非關鍵組件
-- 優化圖像和資源
-
-## Monitoring and Logs
-
-- **Azure Application Insights**: 啟用錯誤跟踪
-- **Azure Web App Logs**: `az webapp log tail --resource-group n8n --name n8n-api`
-- **Database Monitoring**: 通過 Azure Portal 可用
-- **Frontend Logs**: 瀏覽器開發工具和控制台
-
-## Backup and Recovery
-
-### Database Backup
-- Azure MySQL 自動備份已啟用
-- 點時間恢復可用
-- 建議定期導出重要資料
-
-### Application Backup
-- 源代碼版本控制在 Git 中
-- 部署配置存儲在 Azure DevOps
-- 環境變數記錄在安全文件中
-
-This deployment guide provides comprehensive information for setting up, developing, and maintaining the Relax Hotel Conference Record System.
+This deployment guide provides comprehensive information for setting up, developing, and maintaining the Relax Hotel Conference Record System with complete troubleshooting solutions.

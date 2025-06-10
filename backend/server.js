@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
-const { testConnection } = require('./config/db');
+const pool = require('./config/db');
 const setupMiddleware = require('./middleware');
 
 require('dotenv').config({ path: './.env' });
@@ -20,6 +20,38 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+// Database connection test function
+async function testConnection() {
+  let connection;
+  try {
+    console.log('Testing database connection...');
+    console.log('DB_HOST:', process.env.DB_HOST);
+    console.log('DB_NAME:', process.env.DB_NAME);
+    console.log('DB_USER:', process.env.DB_USER);
+    console.log('DB_PORT:', process.env.DB_PORT);
+    
+    connection = await pool.getConnection();
+    console.log('✓ Database connection successful');
+    
+    // Test a simple query
+    const [rows] = await connection.query('SELECT 1 as test');
+    console.log('✓ Database query test successful:', rows);
+    
+    return true;
+  } catch (err) {
+    console.error('Database connection test failed:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage
+    });
+    return false;
+  } finally {
+    if (connection) connection.release();
+  }
+}
 
 async function startServer() {
   try {
