@@ -12,9 +12,6 @@ const pool = mysql.createPool({
     rejectUnauthorized: false // Azure MySQL Flexible Server with require_secure_transport: OFF
   },
   connectionLimit: 10,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true,
   charset: 'utf8mb4'
 });
 

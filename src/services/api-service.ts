@@ -1,12 +1,24 @@
 
 import axios from 'axios';
 
+// Get API base URL from environment variable, fallback to Azure production URL
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  const fallbackUrl = 'https://n8n-api-d3b9a0f3g4a3e4dc.uksouth-01.azurewebsites.net/api';
+  
+  console.log('Environment VITE_API_URL:', envUrl);
+  console.log('Using API URL:', envUrl || fallbackUrl);
+  
+  return envUrl || fallbackUrl;
+};
+
 // Create an axios instance with base configuration
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 // Add request interceptor to include auth token if available
@@ -15,8 +27,25 @@ apiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log('API Request:', config.method?.toUpperCase(), config.url);
   return config;
 });
+
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', error.message, error.config?.url);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Define the filters interface
 interface RecordFilters {
