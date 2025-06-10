@@ -1,5 +1,6 @@
+
 const bcrypt = require('bcrypt');
-const db = require('../config/db');
+const { query } = require('../config/db');
 const { logActivity } = require('../utils/logger');
 
 // Get all users
@@ -10,7 +11,7 @@ exports.getAllUsers = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    const [users] = await db.query(`
+    const [users] = await query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -37,7 +38,7 @@ exports.getUserById = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
     
-    const [users] = await db.query(`
+    const [users] = await query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -72,7 +73,7 @@ exports.createUser = async (req, res) => {
     }
     
     // Check if email already exists
-    const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    const [existingUsers] = await query('SELECT id FROM users WHERE email = ?', [email]);
     if (existingUsers.length > 0) {
       return res.status(409).json({ error: 'Email already exists' });
     }
@@ -82,7 +83,7 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     
     // Insert user
-    const [result] = await db.query(
+    const [result] = await query(
       'INSERT INTO users (name, email, phone, address, departmentId, password, isAdmin, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [name, email, phone || '', address || '', departmentId || 1, hashedPassword, !!isAdmin, isActive !== false]
     );
@@ -91,7 +92,7 @@ exports.createUser = async (req, res) => {
     await logActivity(req.user.userId, 'CREATE_USER', `Created new user: ${name}`);
     
     // Return created user (without password)
-    const [newUser] = await db.query(`
+    const [newUser] = await query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -121,7 +122,7 @@ exports.updateUser = async (req, res) => {
     }
     
     // Check if user exists
-    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    const [users] = await query('SELECT * FROM users WHERE id = ?', [userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -136,13 +137,13 @@ exports.updateUser = async (req, res) => {
       ? [name, email, phone, address, departmentId, !!isAdmin, isActive !== false, userId]
       : [name, email, phone, address, departmentId, userId];
     
-    await db.query(updateQuery, updateParams);
+    await query(updateQuery, updateParams);
     
     // Log user update activity
     await logActivity(req.user.userId, 'UPDATE_USER', `Updated user profile: ${name}`);
     
     // Get updated user
-    const [updatedUsers] = await db.query(`
+    const [updatedUsers] = await query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -169,21 +170,21 @@ exports.deleteUser = async (req, res) => {
     const userId = req.params.id;
     
     // Check if user exists
-    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    const [users] = await query('SELECT * FROM users WHERE id = ?', [userId]);
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Prevent deleting the last admin user
     if (users[0].isAdmin) {
-      const [adminCount] = await db.query('SELECT COUNT(*) as count FROM users WHERE isAdmin = 1');
+      const [adminCount] = await query('SELECT COUNT(*) as count FROM users WHERE isAdmin = 1');
       if (adminCount[0].count <= 1) {
         return res.status(409).json({ error: 'Cannot delete the last admin user' });
       }
     }
     
     // Delete user
-    await db.query('DELETE FROM users WHERE id = ?', [userId]);
+    await query('DELETE FROM users WHERE id = ?', [userId]);
     
     // Log user deletion activity
     await logActivity(req.user.userId, 'DELETE_USER', `Deleted user: ${users[0].name}`);
@@ -207,7 +208,7 @@ exports.changePassword = async (req, res) => {
     }
     
     // Get user with password
-    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    const [users] = await query('SELECT * FROM users WHERE id = ?', [userId]);
     
     if (users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -227,7 +228,7 @@ exports.changePassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
     // Update password
-    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+    await query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
     
     // Log password change
     await logActivity(req.user.userId, 'CHANGE_PASSWORD', `Changed password for user: ${user.name}`);

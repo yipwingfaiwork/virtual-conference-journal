@@ -5,7 +5,7 @@ const routes = require('./routes');
 const { testConnection } = require('./config/db');
 const setupMiddleware = require('./middleware');
 
-require('dotenv').config({ path: './.env' }); //fai add for .env read 10-6-25
+require('dotenv').config({ path: './.env' });
 
 const app = express();
 

@@ -43,7 +43,7 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Application Structure
+## Project File Structure
 
 ```
 Relax Hotel Conference Record System/
@@ -138,38 +138,141 @@ Relax Hotel Conference Record System/
     └── server.js
 ```
 
+## Installation and Setup
+
+### Prerequisites
+
+- Node.js 20.x or later
+- npm or yarn package manager
+- MySQL client (for database setup)
+- Azure CLI (for deployment)
+- Git
+
+### Local Development Setup
+
+1. **Clone the Repository**
+   ```bash
+   git clone <repository-url>
+   cd relax-hotel-system
+   ```
+
+2. **Backend Setup**
+   ```bash
+   cd backend
+   npm install
+   
+   # Create .env file
+   cp .env.example .env
+   # Edit .env with your database credentials
+   ```
+
+3. **Frontend Setup**
+   ```bash
+   cd ..  # Return to root directory
+   npm install
+   ```
+
+4. **Database Setup**
+   ```bash
+   # Connect to MySQL server
+   mysql -h hoteldb.mysql.database.azure.com -u dba -p
+   
+   # Create database and import schema
+   CREATE DATABASE relax_hotel_system;
+   USE relax_hotel_system;
+   source backend/db-schema.sql;
+   ```
+
+5. **Start Development Servers**
+   ```bash
+   # Start backend (in backend directory)
+   cd backend
+   npm run dev
+   
+   # Start frontend (in root directory)
+   cd ..
+   npm run dev
+   ```
+
+### Environment Configuration
+
+#### Local Development (.env)
+```env
+# Database Configuration
+DB_HOST=hoteldb.mysql.database.azure.com
+DB_NAME=relax_hotel_system
+DB_USER=dba
+DB_PASSWORD=Lezykgu1
+DB_PORT=3306
+
+# Server Configuration
+PORT=5001
+JWT_SECRET=relaxhotelkey
+NODE_ENV=development
+
+# API URL
+VITE_API_URL=http://localhost:5001/api
+```
+
+#### Production Environment Variables
+
+**Azure Web App Service (n8n-api):**
+```json
+{
+  "DB_HOST": "hoteldb.mysql.database.azure.com",
+  "DB_NAME": "relax_hotel_system",
+  "DB_USER": "dba",
+  "DB_PASSWORD": "Lezykgu1",
+  "DB_PORT": "3306",
+  "JWT_SECRET": "relaxhotelkey",
+  "NODE_ENV": "production",
+  "PORT": "5001"
+}
+```
+
+**Azure Static Web App:**
+```json
+{
+  "VITE_API_URL": "https://n8n-api-d3b9a0f3g4a3e4dc.uksouth-01.azurewebsites.net/api"
+}
+```
+
 ## Database Schema
 
-### Core Tables Structure
+### Core Tables
 
 ```sql
--- Users with department relationship
-users (
+-- Users table with department relationship
+CREATE TABLE users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   phone VARCHAR(20),
   address TEXT,
-  departmentId INT,                    -- FK to departments.id
-  accessLevel ENUM('user', 'admin'),
+  departmentId INT,
   isAdmin BOOLEAN DEFAULT FALSE,
+  isActive BOOLEAN DEFAULT TRUE,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (departmentId) REFERENCES departments(id)
 );
 
--- Departments
-departments (
+-- Departments table
+CREATE TABLE departments (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
-  description TEXT
+  description TEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Records with department relationship
-records (
+-- Records table with enhanced metadata
+CREATE TABLE records (
   id INT PRIMARY KEY AUTO_INCREMENT,
   date DATETIME NOT NULL,
   duration INT,
-  departmentId INT,                    -- FK to departments.id
+  departmentId INT,
   title VARCHAR(255) NOT NULL,
   participants JSON,
   videoLink VARCHAR(500),
@@ -177,8 +280,8 @@ records (
   outline TEXT,
   isPublic BOOLEAN DEFAULT TRUE,
   isConfidential BOOLEAN DEFAULT FALSE,
-  createdBy INT,                       -- FK to users.id
-  financialPeriodId INT,               -- FK to financial_periods.id
+  createdBy INT,
+  financialPeriodId INT,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (departmentId) REFERENCES departments(id),
@@ -187,15 +290,16 @@ records (
 );
 
 -- Tags for record classification
-tags (
+CREATE TABLE tags (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
   color VARCHAR(7) DEFAULT '#3B82F6',
-  description TEXT
+  description TEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Many-to-many relationship between records and tags
-record_tags (
+CREATE TABLE record_tags (
   recordId INT,
   tagId INT,
   PRIMARY KEY (recordId, tagId),
@@ -203,17 +307,18 @@ record_tags (
   FOREIGN KEY (tagId) REFERENCES tags(id) ON DELETE CASCADE
 );
 
--- Financial periods
-financial_periods (
+-- Financial periods for record organization
+CREATE TABLE financial_periods (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
   startDate DATE NOT NULL,
   endDate DATE NOT NULL,
-  description TEXT
+  description TEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Activity logs for audit trail
-activity_logs (
+CREATE TABLE activity_logs (
   id INT PRIMARY KEY AUTO_INCREMENT,
   userId INT,
   action VARCHAR(255) NOT NULL,
@@ -225,40 +330,7 @@ activity_logs (
 );
 ```
 
-### Key Field Mappings
-
-| Frontend Display | Database Storage | Implementation |
-|-----------------|------------------|----------------|
-| `departmentName` | `departmentId` + JOIN | `LEFT JOIN departments d ON u.departmentId = d.id` |
-| `department` | `departmentId` + JOIN | `LEFT JOIN departments d ON r.departmentId = d.id` |
-| `accessLevel` | `isPublic` + `isConfidential` | Computed: PUBLIC/DEPARTMENT/CONFIDENTIAL |
-| `creatorName` | `createdBy` + JOIN | `LEFT JOIN users u ON r.createdBy = u.id` |
-
-## Environment Configuration
-
-### Frontend Environment Variables
-```env
-# .env (for local development)
-VITE_API_URL=http://localhost:5001/api
-
-# Azure Static Web App Environment Variables
-VITE_API_URL=https://n8n-api-d3b9a0f3g4a3e4dc.uksouth-01.azurewebsites.net/api
-```
-
-### Backend Environment Variables
-```env
-# Azure Web App Service Environment Variables
-NODE_ENV=production
-PORT=5001
-DB_HOST=hoteldb.mysql.database.azure.com
-DB_NAME=relax_hotel_system
-DB_USER=dba
-DB_PASSWORD=Lezykgu1
-DB_PORT=3306
-JWT_SECRET=relaxhotelkey
-```
-
-## API Endpoints Documentation
+## API Endpoints
 
 ### Authentication Endpoints
 - `POST /api/auth/login` - User login with email/password
@@ -271,6 +343,7 @@ JWT_SECRET=relaxhotelkey
 - `POST /api/users` - Create new user (admin only)
 - `PUT /api/users/:id` - Update user information
 - `DELETE /api/users/:id` - Delete user (admin only)
+- `POST /api/users/:id/change-password` - Change user password
 
 ### Record Management Endpoints
 - `GET /api/records` - List records with filtering/pagination
@@ -282,8 +355,15 @@ JWT_SECRET=relaxhotelkey
 
 ### Supporting Data Endpoints
 - `GET /api/departments` - List all departments
+- `POST /api/departments` - Create new department (admin only)
+- `PUT /api/departments/:id` - Update department (admin only)
+- `DELETE /api/departments/:id` - Delete department (admin only)
 - `GET /api/tags` - List all classification tags
+- `POST /api/tags` - Create new tag (admin only)
+- `PUT /api/tags/:id` - Update tag (admin only)
+- `DELETE /api/tags/:id` - Delete tag (admin only)
 - `GET /api/financial-periods` - List financial periods
+- `POST /api/financial-periods` - Create new financial period (admin only)
 - `GET /api/activity-logs` - System activity logs (admin only)
 
 ## Deployment Steps
@@ -299,7 +379,7 @@ JWT_SECRET=relaxhotelkey
 
 **Security Settings:**
 - Public access: Enabled
-- Firewall: Allow Azure services
+- Firewall: Allow Azure services and your local IP
 - SSL/TLS: Available but not required (`require_secure_transport: OFF`)
 
 **Database Creation:**
@@ -309,7 +389,7 @@ CREATE DATABASE relax_hotel_system;
 USE relax_hotel_system;
 
 -- Import schema from backend/db-schema.sql
--- Note: Run the SQL commands manually or use MySQL client
+-- Run the SQL commands manually or use MySQL client
 ```
 
 ### 2. Backend Deployment (Azure Web App Service)
@@ -365,32 +445,48 @@ USE relax_hotel_system;
 ### Common Issues and Solutions
 
 #### 1. Database Connection Errors
+
+**Error:** `ECONNREFUSED` or connection timeout
+**Solutions:**
+- Verify Azure MySQL firewall allows your IP address
+- Check if "Allow Azure services" is enabled
+- Ensure database credentials are correct
+- Test connection manually: `mysql -h hoteldb.mysql.database.azure.com -u dba -p`
+
 **Error:** `Unknown column 'department' in 'field list'`
 **Solution:** 
 - Use `departmentId` in database queries, not `department`
 - JOIN with `departments` table to get `departmentName` for display
 
-**Error:** `SSL connection error`
-**Solution:**
-- Use simplified SSL configuration: `ssl: { rejectUnauthorized: false }`
-- Azure MySQL Flexible Server doesn't require CA certificates when `require_secure_transport: OFF`
+#### 2. API 500 Internal Server Errors
 
-#### 2. API 404 Errors
+**Error:** Login endpoint returns 500 error
+**Solutions:**
+- Check server logs for specific error details
+- Verify database connection is working
+- Ensure `users` table exists with correct schema
+- Check if JWT_SECRET environment variable is set
+
+#### 3. API 404 Errors
+
 **Error:** `GET /api/tags 404 (Not Found)`
-**Solution:**
+**Solutions:**
 - Ensure all route files are properly registered in `backend/routes/index.js`
 - Verify controller files exist and export required functions
+- Check if routes are correctly defined in route files
 
-#### 3. CORS Issues
+#### 4. CORS Issues
+
 **Error:** Cross-origin request blocked
-**Solution:**
+**Solutions:**
 - Configure CORS in `backend/middleware/index.js`
 - Add both production and development origins
 - Handle preflight OPTIONS requests
 
-#### 4. Authentication Errors
+#### 5. Authentication Errors
+
 **Error:** JWT token validation fails
-**Solution:**
+**Solutions:**
 - Verify `JWT_SECRET` is set in environment variables
 - Check token expiration and refresh logic
 - Ensure proper Authorization header format: `Bearer <token>`
@@ -404,6 +500,8 @@ CREATE INDEX idx_records_department ON records(departmentId);
 CREATE INDEX idx_records_creator ON records(createdBy);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_department ON users(departmentId);
+CREATE INDEX idx_activity_logs_user ON activity_logs(userId);
+CREATE INDEX idx_activity_logs_timestamp ON activity_logs(timestamp);
 ```
 
 **Connection Pooling:**
@@ -419,26 +517,47 @@ CREATE INDEX idx_users_department ON users(departmentId);
 - Custom telemetry for API endpoints
 
 **Log Analysis:**
-- Azure App Service logs available via Azure CLI
+- Azure App Service logs available via Azure CLI: `az webapp log tail --resource-group n8n --name n8n-api`
 - Database query logging in development
 - Authentication and authorization logs
+
+### Development Commands
+
+```bash
+# Backend development
+cd backend
+npm run dev          # Start with nodemon
+npm start           # Start production server
+npm run test-db     # Test database connection
+
+# Frontend development
+npm run dev         # Start Vite development server
+npm run build       # Build for production
+npm run preview     # Preview production build
+
+# Database operations
+mysql -h hoteldb.mysql.database.azure.com -u dba -p relax_hotel_system
+```
 
 ## Security Considerations
 
 ### Authentication & Authorization
 - JWT-based authentication with secure secret
 - Role-based access control (user/admin)
-- Password hashing with bcrypt
+- Password hashing with bcrypt (10 rounds)
+- Session timeout and token expiration
 
 ### Data Protection
 - SQL injection prevention with parameterized queries
 - XSS protection with input sanitization
 - HTTPS enforcement in production
+- Environment variable protection
 
 ### Access Control
 - Department-based record visibility
 - Public/Confidential record classification
 - Admin-only operations protection
+- User can only modify their own records
 
 ## Backup and Recovery
 
@@ -451,5 +570,14 @@ CREATE INDEX idx_users_department ON users(departmentId);
 - GitHub repository contains all source code
 - Azure deployment from GitHub ensures reproducibility
 - Environment variables stored in Azure configuration
+
+### Manual Backup Commands
+```bash
+# Export database
+mysqldump -h hoteldb.mysql.database.azure.com -u dba -p relax_hotel_system > backup.sql
+
+# Import database
+mysql -h hoteldb.mysql.database.azure.com -u dba -p relax_hotel_system < backup.sql
+```
 
 This deployment guide provides comprehensive information for setting up, maintaining, and troubleshooting the Relax Hotel Conference Record System on Azure infrastructure.

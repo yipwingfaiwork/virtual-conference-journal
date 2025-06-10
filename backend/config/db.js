@@ -1,20 +1,21 @@
 
 const mysql = require('mysql2/promise');
 
-// Simple database connection without SSL certificate
+// Database connection configuration for Azure MySQL
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+  port: parseInt(process.env.DB_PORT) || 3306,
   ssl: {
-    rejectUnauthorized: false // Allow self-signed certificates for Azure MySQL
+    rejectUnauthorized: false // Azure MySQL Flexible Server with require_secure_transport: OFF
   },
   connectionLimit: 10,
   acquireTimeout: 60000,
   timeout: 60000,
-  reconnect: true
+  reconnect: true,
+  charset: 'utf8mb4'
 });
 
 // Test connection function
@@ -28,11 +29,11 @@ async function testConnection() {
     console.log('DB_PORT:', process.env.DB_PORT);
     
     connection = await pool.getConnection();
-    console.log('Database connection test successful');
+    console.log('✓ Database connection successful');
     
     // Test a simple query
     const [rows] = await connection.query('SELECT 1 as test');
-    console.log('Database query test successful:', rows);
+    console.log('✓ Database query test successful:', rows);
     
     return true;
   } catch (err) {
@@ -54,5 +55,9 @@ pool.on('error', (err) => {
   console.error('Database pool error:', err);
 });
 
-// Export pool and testConnection
-module.exports = { pool, testConnection };
+// Export both pool and query method for compatibility
+module.exports = { 
+  pool, 
+  testConnection,
+  query: (sql, params) => pool.execute(sql, params) // Export query method for controllers
+};

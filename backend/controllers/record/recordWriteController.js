@@ -1,92 +1,113 @@
 
-const db = require('../../config/db');
+const { query } = require('../../config/db');
 const { logActivity } = require('../../utils/logger');
 
 // Create new record
 exports.createRecord = async (req, res) => {
   try {
-    console.log('Creating record with body:', req.body);
-    
     const {
-      date, duration, department, title, participants, videoLink,
-      textRecord, outline, remark, financialPeriodId, isPublic, isConfidential, tags
+      date,
+      duration,
+      departmentId,
+      title,
+      participants,
+      videoLink,
+      textRecord,
+      outline,
+      isPublic,
+      isConfidential,
+      financialPeriodId,
+      tags
     } = req.body;
-    
-    const createdBy = req.user.userId;
-    
+
+    console.log('Creating record with data:', {
+      date, duration, departmentId, title, 
+      participantsCount: participants?.length,
+      userId: req.user.userId
+    });
+
     // Validate required fields
-    if (!date || !duration || !title) {
-      return res.status(400).json({ error: 'Date, duration, and title are required' });
+    if (!date || !title) {
+      return res.status(400).json({ error: 'Date and title are required' });
     }
-    
-    // Find department ID by name if department is provided as string
-    let departmentId = req.user.departmentId; // Default to user's department
-    
-    if (department) {
-      // If department is a number, use it directly as departmentId
-      if (typeof department === 'number' || !isNaN(department)) {
-        departmentId = parseInt(department);
-      } else {
-        // If department is a string, find the department by name
-        const [depts] = await db.query('SELECT id FROM departments WHERE name = ?', [department]);
-        if (depts.length > 0) {
-          departmentId = depts[0].id;
-        }
-      }
-    }
-    
-    console.log('Using departmentId:', departmentId);
-    
-    // Insert record using departmentId (corrected SQL)
-    const [result] = await db.query(
-      `INSERT INTO records (date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
+    // Create the record
+    const [result] = await query(
+      `INSERT INTO records (
+        date, duration, departmentId, title, participants, 
+        videoLink, textRecord, outline, isPublic, isConfidential, 
+        createdBy, financialPeriodId
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        date, duration, departmentId, title, 
-        JSON.stringify(participants || []), 
-        videoLink || '', textRecord || '', outline || '', remark || '',
-        createdBy, financialPeriodId || null, 
-        !!isPublic, !!isConfidential
+        date,
+        duration || null,
+        departmentId || null,
+        title,
+        JSON.stringify(participants || []),
+        videoLink || null,
+        textRecord || '',
+        outline || '',
+        isPublic !== false,
+        isConfidential === true,
+        req.user.userId,
+        financialPeriodId || null
       ]
     );
-    
+
     const recordId = result.insertId;
-    console.log('Created record with ID:', recordId);
-    
-    // Handle tags if provided
+    console.log('Record created with ID:', recordId);
+
+    // Add tags if provided
     if (tags && Array.isArray(tags) && tags.length > 0) {
-      for (const tagId of tags) {
-        await db.query(
-          'INSERT IGNORE INTO record_tags (recordId, tagId) VALUES (?, ?)',
-          [recordId, tagId]
-        );
-      }
+      const tagQueries = tags.map(tagId => 
+        query('INSERT INTO record_tags (recordId, tagId) VALUES (?, ?)', [recordId, tagId])
+      );
+      await Promise.all(tagQueries);
+      console.log('Tags added to record:', tags);
     }
-    
+
     // Log activity
-    await logActivity(createdBy, 'CREATE_RECORD', `Created record: ${title}`, recordId);
-    
-    // Return the created record with complete information
-    const [newRecord] = await db.query(`
+    await logActivity(req.user.userId, 'CREATE_RECORD', `Created record: ${title}`);
+
+    // Get the created record with department and creator info
+    const [records] = await query(`
       SELECT 
-        r.id, r.date, r.duration, r.title, r.participants, r.videoLink,
-        r.textRecord, r.outline, r.remark, r.createdBy, r.financialPeriodId,
-        r.isPublic, r.isConfidential, r.createdAt, r.updatedAt,
-        d.name as department, d.name as departmentName, r.departmentId,
-        CASE 
-          WHEN r.isPublic = 1 THEN 'PUBLIC'
-          WHEN r.isConfidential = 1 THEN 'CONFIDENTIAL'
-          ELSE 'DEPARTMENT'
-        END as accessLevel
+        r.id, r.date, r.duration, r.departmentId, r.title, r.participants,
+        r.videoLink, r.textRecord, r.outline, r.isPublic, r.isConfidential,
+        r.createdBy, r.financialPeriodId, r.createdAt, r.updatedAt,
+        d.name as department,
+        u.name as creatorName,
+        fp.name as financialPeriod
       FROM records r
       LEFT JOIN departments d ON r.departmentId = d.id
+      LEFT JOIN users u ON r.createdBy = u.id
+      LEFT JOIN financial_periods fp ON r.financialPeriodId = fp.id
       WHERE r.id = ?
     `, [recordId]);
-    
-    res.status(201).json(newRecord[0]);
+
+    // Get tags for this record
+    const [recordTags] = await query(`
+      SELECT t.id, t.name, t.color
+      FROM tags t
+      JOIN record_tags rt ON t.id = rt.tagId
+      WHERE rt.recordId = ?
+    `, [recordId]);
+
+    const record = {
+      ...records[0],
+      tags: recordTags
+    };
+
+    console.log('Record creation successful');
+    res.status(201).json(record);
   } catch (error) {
-    console.error('Error creating record:', error);
-    res.status(500).json({ error: 'Failed to create record', details: error.message });
+    console.error('Error creating record:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      sqlState: error.sqlState
+    });
+    res.status(500).json({ error: 'Failed to create record' });
   }
 };
 
@@ -95,84 +116,107 @@ exports.updateRecord = async (req, res) => {
   try {
     const recordId = req.params.id;
     const {
-      date, duration, department, title, participants, videoLink,
-      textRecord, outline, remark, financialPeriodId, isPublic, isConfidential, tags
+      date,
+      duration,
+      departmentId,
+      title,
+      participants,
+      videoLink,
+      textRecord,
+      outline,
+      isPublic,
+      isConfidential,
+      financialPeriodId,
+      tags
     } = req.body;
+
+    // Check if record exists
+    const [existingRecords] = await query('SELECT * FROM records WHERE id = ?', [recordId]);
     
-    const userId = req.user.userId;
-    
-    // Validate required fields
-    if (!date || !duration || !title) {
-      return res.status(400).json({ error: 'Date, duration, and title are required' });
+    if (existingRecords.length === 0) {
+      return res.status(404).json({ error: 'Record not found' });
     }
-    
-    // Find department ID by name
-    let departmentId = req.user.departmentId; // Default to user's department
-    
-    if (department) {
-      // If department is a number, use it directly as departmentId
-      if (typeof department === 'number' || !isNaN(department)) {
-        departmentId = parseInt(department);
-      } else {
-        // If department is a string, find the department by name
-        const [depts] = await db.query('SELECT id FROM departments WHERE name = ?', [department]);
-        if (depts.length > 0) {
-          departmentId = depts[0].id;
-        }
-      }
+
+    const existingRecord = existingRecords[0];
+
+    // Check permissions
+    if (existingRecord.createdBy !== req.user.userId && !req.user.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized to update this record' });
     }
-    
-    // Update record using departmentId instead of department name
-    await db.query(
-      `UPDATE records SET date = ?, duration = ?, departmentId = ?, title = ?, participants = ?, 
-       videoLink = ?, textRecord = ?, outline = ?, remark = ?, financialPeriodId = ?, 
-       isPublic = ?, isConfidential = ? WHERE id = ?`,
+
+    // Update the record
+    await query(
+      `UPDATE records SET 
+        date = ?, duration = ?, departmentId = ?, title = ?, participants = ?,
+        videoLink = ?, textRecord = ?, outline = ?, isPublic = ?, isConfidential = ?,
+        financialPeriodId = ?, updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?`,
       [
-        date, duration, departmentId, title, 
-        JSON.stringify(participants || []), 
-        videoLink || '', textRecord || '', outline || '', remark || '',
-        financialPeriodId || null, 
-        !!isPublic, !!isConfidential, recordId
+        date,
+        duration || null,
+        departmentId || null,
+        title,
+        JSON.stringify(participants || []),
+        videoLink || null,
+        textRecord || '',
+        outline || '',
+        isPublic !== false,
+        isConfidential === true,
+        financialPeriodId || null,
+        recordId
       ]
     );
-    
-    // Clear existing tags
-    await db.query('DELETE FROM record_tags WHERE recordId = ?', [recordId]);
-    
-    // Handle tags if provided
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-      for (const tagId of tags) {
-        await db.query(
-          'INSERT IGNORE INTO record_tags (recordId, tagId) VALUES (?, ?)',
-          [recordId, tagId]
+
+    // Update tags
+    if (tags !== undefined) {
+      // Remove existing tags
+      await query('DELETE FROM record_tags WHERE recordId = ?', [recordId]);
+      
+      // Add new tags
+      if (Array.isArray(tags) && tags.length > 0) {
+        const tagQueries = tags.map(tagId => 
+          query('INSERT INTO record_tags (recordId, tagId) VALUES (?, ?)', [recordId, tagId])
         );
+        await Promise.all(tagQueries);
       }
     }
-    
+
     // Log activity
-    await logActivity(userId, 'UPDATE_RECORD', `Updated record: ${title}`, recordId);
-    
-    // Return the updated record with complete information
-    const [updatedRecord] = await db.query(`
+    await logActivity(req.user.userId, 'UPDATE_RECORD', `Updated record: ${title}`);
+
+    // Get the updated record
+    const [records] = await query(`
       SELECT 
-        r.id, r.date, r.duration, r.title, r.participants, r.videoLink,
-        r.textRecord, r.outline, r.remark, r.createdBy, r.financialPeriodId,
-        r.isPublic, r.isConfidential, r.createdAt, r.updatedAt,
-        d.name as department, d.name as departmentName, r.departmentId,
-        CASE 
-          WHEN r.isPublic = 1 THEN 'PUBLIC'
-          WHEN r.isConfidential = 1 THEN 'CONFIDENTIAL'
-          ELSE 'DEPARTMENT'
-        END as accessLevel
+        r.id, r.date, r.duration, r.departmentId, r.title, r.participants,
+        r.videoLink, r.textRecord, r.outline, r.isPublic, r.isConfidential,
+        r.createdBy, r.financialPeriodId, r.createdAt, r.updatedAt,
+        d.name as department,
+        u.name as creatorName,
+        fp.name as financialPeriod
       FROM records r
       LEFT JOIN departments d ON r.departmentId = d.id
+      LEFT JOIN users u ON r.createdBy = u.id
+      LEFT JOIN financial_periods fp ON r.financialPeriodId = fp.id
       WHERE r.id = ?
     `, [recordId]);
-    
-    res.json(updatedRecord[0]);
+
+    // Get tags for this record
+    const [recordTags] = await query(`
+      SELECT t.id, t.name, t.color
+      FROM tags t
+      JOIN record_tags rt ON t.id = rt.tagId
+      WHERE rt.recordId = ?
+    `, [recordId]);
+
+    const record = {
+      ...records[0],
+      tags: recordTags
+    };
+
+    res.json(record);
   } catch (error) {
     console.error('Error updating record:', error);
-    res.status(500).json({ error: 'Failed to update record', details: error.message });
+    res.status(500).json({ error: 'Failed to update record' });
   }
 };
 
@@ -180,25 +224,30 @@ exports.updateRecord = async (req, res) => {
 exports.deleteRecord = async (req, res) => {
   try {
     const recordId = req.params.id;
-    const userId = req.user.userId;
-    
+
     // Check if record exists
-    const [records] = await db.query('SELECT title FROM records WHERE id = ?', [recordId]);
-    if (records.length === 0) {
+    const [existingRecords] = await query('SELECT * FROM records WHERE id = ?', [recordId]);
+    
+    if (existingRecords.length === 0) {
       return res.status(404).json({ error: 'Record not found' });
     }
-    
-    const recordTitle = records[0].title;
-    
-    // Delete record
-    await db.query('DELETE FROM records WHERE id = ?', [recordId]);
-    
+
+    const existingRecord = existingRecords[0];
+
+    // Check permissions (only admin can delete records)
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Unauthorized. Only administrators can delete records.' });
+    }
+
+    // Delete the record (cascade will handle record_tags)
+    await query('DELETE FROM records WHERE id = ?', [recordId]);
+
     // Log activity
-    await logActivity(userId, 'DELETE_RECORD', `Deleted record: ${recordTitle}`, recordId);
-    
+    await logActivity(req.user.userId, 'DELETE_RECORD', `Deleted record: ${existingRecord.title}`);
+
     res.json({ message: 'Record deleted successfully' });
   } catch (error) {
     console.error('Error deleting record:', error);
-    res.status(500).json({ error: 'Failed to delete record', details: error.message });
+    res.status(500).json({ error: 'Failed to delete record' });
   }
 };

@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const db = require('../config/db');
+const { query } = require('../config/db');
 const { logActivity } = require('../utils/logger');
 
 // Login
@@ -9,12 +9,14 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    console.log('Login attempt for email:', email);
+    
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
     
     // Get user with department info
-    const [users] = await db.query(`
+    const [users] = await query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.password, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -23,6 +25,8 @@ exports.login = async (req, res) => {
       LEFT JOIN departments d ON u.departmentId = d.id
       WHERE u.email = ?
     `, [email]);
+    
+    console.log('User query result:', users.length > 0 ? 'User found' : 'User not found');
     
     if (users.length === 0) {
       return res.status(401).json({ error: 'Invalid email or password' });
@@ -48,12 +52,19 @@ exports.login = async (req, res) => {
         isAdmin: user.isAdmin,
         departmentId: user.departmentId 
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET || 'relaxhotelkey',
       { expiresIn: '24h' }
     );
     
+    console.log('Login successful for user:', user.email);
+    
     // Log login activity
-    await logActivity(user.id, 'LOGIN', `User logged in: ${user.email}`);
+    try {
+      await logActivity(user.id, 'LOGIN', `User logged in: ${user.email}`);
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+      // Don't fail login if logging fails
+    }
     
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
@@ -64,7 +75,12 @@ exports.login = async (req, res) => {
       user: userWithoutPassword
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      sqlState: error.sqlState
+    });
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -74,7 +90,7 @@ exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.userId;
     
-    const [users] = await db.query(`
+    const [users] = await query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
         u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
@@ -99,7 +115,12 @@ exports.getCurrentUser = async (req, res) => {
 exports.logout = async (req, res) => {
   try {
     // Log logout activity
-    await logActivity(req.user.userId, 'LOGOUT', `User logged out: ${req.user.email}`);
+    try {
+      await logActivity(req.user.userId, 'LOGOUT', `User logged out: ${req.user.email}`);
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+      // Don't fail logout if logging fails
+    }
     
     res.json({ message: 'Logout successful' });
   } catch (error) {
