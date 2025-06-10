@@ -82,7 +82,7 @@ class RecordService {
   }
 
   // Process record results to clean up and transform data
-  /*static processRecordResults(rows) {
+  static processRecordResults(rows) {
     return rows.map(row => ({
       ...row,
       tags: row.tags ? row.tags.filter(tag => tag !== null) : [],
@@ -91,7 +91,8 @@ class RecordService {
       allowedDepartments: [],
       allowedUsers: []
     }));
-  }*/
+  }
+ /*
  static processRecordResults(rows) { //Fai ref Grok change 10-6-25
   return rows.map(row => {
     let tags = [];
@@ -111,6 +112,7 @@ class RecordService {
     };
   });
 }
+*/
 
   // Apply tag filters after processing
   static applyTagFilters(records, tagFilters) {
