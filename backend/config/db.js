@@ -53,8 +53,4 @@ pool.on('error', (err) => {
 });
 
 // Export both pool and query method for compatibility
-module.exports = { 
-  pool, 
-  testConnection,
-  query: (sql, params) => pool.execute(sql, params) // Export query method for controllers
-};
+module.exports = pool;

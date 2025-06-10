@@ -1,19 +1,14 @@
 
-const { pool } = require('../config/db');
+const pool = require('../config/db');
 
 // Get all departments
 exports.getAllDepartments = async (req, res) => {
   try {
-    console.log('Fetching all departments...');
-    const [rows] = await pool.execute('SELECT * FROM departments ORDER BY name');
-    console.log('Departments fetched successfully:', rows.length);
-    res.json(rows);
+    const [departments] = await pool.execute('SELECT * FROM departments ORDER BY name');
+    res.json(departments);
   } catch (error) {
     console.error('Error fetching departments:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch departments',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to fetch departments' });
   }
 };
 
@@ -21,58 +16,58 @@ exports.getAllDepartments = async (req, res) => {
 exports.getDepartmentById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('Fetching department by ID:', id);
+    const [departments] = await pool.execute('SELECT * FROM departments WHERE id = ?', [id]);
     
-    const [rows] = await pool.execute('SELECT * FROM departments WHERE id = ?', [id]);
-    
-    if (rows.length === 0) {
+    if (departments.length === 0) {
       return res.status(404).json({ error: 'Department not found' });
     }
     
-    console.log('Department fetched successfully:', rows[0]);
-    res.json(rows[0]);
+    res.json(departments[0]);
   } catch (error) {
     console.error('Error fetching department:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch department',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to fetch department' });
   }
 };
 
 // Create new department
 exports.createDepartment = async (req, res) => {
   try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
     const { name, description } = req.body;
-    console.log('Creating new department:', { name, description });
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Department name is required' });
+    }
     
     const [result] = await pool.execute(
       'INSERT INTO departments (name, description) VALUES (?, ?)',
-      [name, description]
+      [name, description || null]
     );
     
-    console.log('Department created successfully with ID:', result.insertId);
-    res.status(201).json({ 
-      id: result.insertId, 
-      name, 
-      description,
-      message: 'Department created successfully' 
-    });
+    const [departments] = await pool.execute(
+      'SELECT * FROM departments WHERE id = ?',
+      [result.insertId]
+    );
+    
+    res.status(201).json(departments[0]);
   } catch (error) {
     console.error('Error creating department:', error);
-    res.status(500).json({ 
-      error: 'Failed to create department',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to create department' });
   }
 };
 
 // Update department
 exports.updateDepartment = async (req, res) => {
   try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
     const { id } = req.params;
     const { name, description } = req.body;
-    console.log('Updating department:', { id, name, description });
     
     const [result] = await pool.execute(
       'UPDATE departments SET name = ?, description = ? WHERE id = ?',
@@ -83,27 +78,26 @@ exports.updateDepartment = async (req, res) => {
       return res.status(404).json({ error: 'Department not found' });
     }
     
-    console.log('Department updated successfully');
-    res.json({ 
-      id, 
-      name, 
-      description,
-      message: 'Department updated successfully' 
-    });
+    const [departments] = await pool.execute(
+      'SELECT * FROM departments WHERE id = ?',
+      [id]
+    );
+    
+    res.json(departments[0]);
   } catch (error) {
     console.error('Error updating department:', error);
-    res.status(500).json({ 
-      error: 'Failed to update department',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to update department' });
   }
 };
 
 // Delete department
 exports.deleteDepartment = async (req, res) => {
   try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
     const { id } = req.params;
-    console.log('Deleting department:', id);
     
     const [result] = await pool.execute('DELETE FROM departments WHERE id = ?', [id]);
     
@@ -111,13 +105,9 @@ exports.deleteDepartment = async (req, res) => {
       return res.status(404).json({ error: 'Department not found' });
     }
     
-    console.log('Department deleted successfully');
     res.json({ message: 'Department deleted successfully' });
   } catch (error) {
     console.error('Error deleting department:', error);
-    res.status(500).json({ 
-      error: 'Failed to delete department',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to delete department' });
   }
 };

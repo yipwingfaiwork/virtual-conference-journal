@@ -1,5 +1,4 @@
-
-const { query } = require('../../config/db');
+const pool = require('../../config/db');
 const { logActivity } = require('../../utils/logger');
 
 // Create new record
@@ -32,7 +31,7 @@ exports.createRecord = async (req, res) => {
     }
 
     // Create the record
-    const [result] = await query(
+    const [result] = await pool.execute(
       `INSERT INTO records (
         date, duration, departmentId, title, participants, 
         videoLink, textRecord, outline, isPublic, isConfidential, 
@@ -60,7 +59,7 @@ exports.createRecord = async (req, res) => {
     // Add tags if provided
     if (tags && Array.isArray(tags) && tags.length > 0) {
       const tagQueries = tags.map(tagId => 
-        query('INSERT INTO record_tags (recordId, tagId) VALUES (?, ?)', [recordId, tagId])
+        pool.execute('INSERT INTO record_tags (recordId, tagId) VALUES (?, ?)', [recordId, tagId])
       );
       await Promise.all(tagQueries);
       console.log('Tags added to record:', tags);
@@ -70,7 +69,7 @@ exports.createRecord = async (req, res) => {
     await logActivity(req.user.userId, 'CREATE_RECORD', `Created record: ${title}`);
 
     // Get the created record with department and creator info
-    const [records] = await query(`
+    const [records] = await pool.execute(`
       SELECT 
         r.id, r.date, r.duration, r.departmentId, r.title, r.participants,
         r.videoLink, r.textRecord, r.outline, r.isPublic, r.isConfidential,
@@ -86,7 +85,7 @@ exports.createRecord = async (req, res) => {
     `, [recordId]);
 
     // Get tags for this record
-    const [recordTags] = await query(`
+    const [recordTags] = await pool.execute(`
       SELECT t.id, t.name, t.color
       FROM tags t
       JOIN record_tags rt ON t.id = rt.tagId
@@ -131,7 +130,7 @@ exports.updateRecord = async (req, res) => {
     } = req.body;
 
     // Check if record exists
-    const [existingRecords] = await query('SELECT * FROM records WHERE id = ?', [recordId]);
+    const [existingRecords] = await pool.execute('SELECT * FROM records WHERE id = ?', [recordId]);
     
     if (existingRecords.length === 0) {
       return res.status(404).json({ error: 'Record not found' });
@@ -145,7 +144,7 @@ exports.updateRecord = async (req, res) => {
     }
 
     // Update the record
-    await query(
+    await pool.execute(
       `UPDATE records SET 
         date = ?, duration = ?, departmentId = ?, title = ?, participants = ?,
         videoLink = ?, textRecord = ?, outline = ?, isPublic = ?, isConfidential = ?,
@@ -170,12 +169,12 @@ exports.updateRecord = async (req, res) => {
     // Update tags
     if (tags !== undefined) {
       // Remove existing tags
-      await query('DELETE FROM record_tags WHERE recordId = ?', [recordId]);
+      await pool.execute('DELETE FROM record_tags WHERE recordId = ?', [recordId]);
       
       // Add new tags
       if (Array.isArray(tags) && tags.length > 0) {
         const tagQueries = tags.map(tagId => 
-          query('INSERT INTO record_tags (recordId, tagId) VALUES (?, ?)', [recordId, tagId])
+          pool.execute('INSERT INTO record_tags (recordId, tagId) VALUES (?, ?)', [recordId, tagId])
         );
         await Promise.all(tagQueries);
       }
@@ -185,7 +184,7 @@ exports.updateRecord = async (req, res) => {
     await logActivity(req.user.userId, 'UPDATE_RECORD', `Updated record: ${title}`);
 
     // Get the updated record
-    const [records] = await query(`
+    const [records] = await pool.execute(`
       SELECT 
         r.id, r.date, r.duration, r.departmentId, r.title, r.participants,
         r.videoLink, r.textRecord, r.outline, r.isPublic, r.isConfidential,
@@ -201,7 +200,7 @@ exports.updateRecord = async (req, res) => {
     `, [recordId]);
 
     // Get tags for this record
-    const [recordTags] = await query(`
+    const [recordTags] = await pool.execute(`
       SELECT t.id, t.name, t.color
       FROM tags t
       JOIN record_tags rt ON t.id = rt.tagId
@@ -226,7 +225,7 @@ exports.deleteRecord = async (req, res) => {
     const recordId = req.params.id;
 
     // Check if record exists
-    const [existingRecords] = await query('SELECT * FROM records WHERE id = ?', [recordId]);
+    const [existingRecords] = await pool.execute('SELECT * FROM records WHERE id = ?', [recordId]);
     
     if (existingRecords.length === 0) {
       return res.status(404).json({ error: 'Record not found' });
@@ -240,7 +239,7 @@ exports.deleteRecord = async (req, res) => {
     }
 
     // Delete the record (cascade will handle record_tags)
-    await query('DELETE FROM records WHERE id = ?', [recordId]);
+    await pool.execute('DELETE FROM records WHERE id = ?', [recordId]);
 
     // Log activity
     await logActivity(req.user.userId, 'DELETE_RECORD', `Deleted record: ${existingRecord.title}`);

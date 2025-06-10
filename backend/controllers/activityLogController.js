@@ -1,5 +1,5 @@
 
-const db = require('../config/db');
+const pool = require('../config/db');
 
 // Get activity logs
 exports.getActivityLogs = async (req, res) => {
@@ -46,7 +46,7 @@ exports.getActivityLogs = async (req, res) => {
       params.push(Number(limit));
     }
     
-    const [logs] = await db.query(query, params);
+    const [logs] = await pool.execute(query, params);
     
     res.json(logs);
   } catch (error) {
