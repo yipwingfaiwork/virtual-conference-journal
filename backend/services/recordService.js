@@ -82,7 +82,7 @@ class RecordService {
   }
 
   // Process record results to clean up and transform data
-  static processRecordResults(rows) {
+  /*static processRecordResults(rows) {
     return rows.map(row => ({
       ...row,
       tags: row.tags ? row.tags.filter(tag => tag !== null) : [],
@@ -91,7 +91,26 @@ class RecordService {
       allowedDepartments: [],
       allowedUsers: []
     }));
-  }
+  }*/
+ static processRecordResults(rows) { //Fai ref Grok change 10-6-25
+  return rows.map(row => {
+    let tags = [];
+    try {
+      tags = row.tags ? JSON.parse(row.tags) : [];
+    } catch (e) {
+      console.warn(`Invalid JSON in tags for row ${row.id}: ${row.tags}, using empty array`);
+      tags = [];
+    }
+    return {
+      ...row,
+      tags,
+      participants: row.participants ? JSON.parse(row.participants) : [],
+      accessLevel: row.isPublic ? 'PUBLIC' : (row.isConfidential ? 'CONFIDENTIAL' : 'DEPARTMENT'),
+      allowedDepartments: [],
+      allowedUsers: []
+    };
+  });
+}
 
   // Apply tag filters after processing
   static applyTagFilters(records, tagFilters) {
