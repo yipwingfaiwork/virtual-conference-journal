@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -11,6 +10,11 @@ import apiClient from '@/services/api-service';
 interface BasicInformationFormProps {
   record: Partial<ConferenceRecord>;
   setRecord: (record: Partial<ConferenceRecord>) => void;
+  handleChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSelectChange?: (name: string, value: string) => void;
+  handleParticipantsChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRadioChange?: (name: string, value: string) => void;
+  participantsInput?: string;
 }
 
 interface Department {
@@ -18,7 +22,15 @@ interface Department {
   name: string;
 }
 
-const BasicInformationForm = ({ record, setRecord }: BasicInformationFormProps) => {
+const BasicInformationForm = ({ 
+  record, 
+  setRecord,
+  handleChange,
+  handleSelectChange,
+  handleParticipantsChange,
+  handleRadioChange,
+  participantsInput
+}: BasicInformationFormProps) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);

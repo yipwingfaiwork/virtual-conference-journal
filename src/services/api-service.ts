@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { ConferenceRecord, SearchFilters } from '../lib/types';
 
@@ -74,5 +75,21 @@ export const RecordsAPI = {
     await apiClient.delete(`/records/${id}`);
   },
 };
+
+export const ActivityLogsAPI = {
+  getAll: async (params: any = {}) => {
+    const response = await apiClient.get('/activity-logs', { params });
+    return response.data;
+  },
+};
+
+export const badgeVariants = {
+  default: "default",
+  secondary: "secondary", 
+  destructive: "destructive",
+  outline: "outline",
+  success: "success",
+  warning: "warning"
+} as const;
 
 export default apiClient;
