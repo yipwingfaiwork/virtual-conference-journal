@@ -83,36 +83,52 @@ class RecordService {
 
   // Process record results to clean up and transform data
   static processRecordResults(rows) {
-    return rows.map(row => ({
-      ...row,
-      tags: row.tags ? row.tags.filter(tag => tag !== null) : [],
-      participants: row.participants ? JSON.parse(row.participants) : [],
-      accessLevel: row.isPublic ? 'PUBLIC' : (row.isConfidential ? 'CONFIDENTIAL' : 'DEPARTMENT'),
-      allowedDepartments: [],
-      allowedUsers: []
-    }));
+    return rows.map(row => {
+      let tags = [];
+      let participants = [];
+      
+      // Safely parse tags
+      try {
+        if (row.tags) {
+          if (typeof row.tags === 'string') {
+            // Try to parse as JSON string
+            tags = JSON.parse(row.tags);
+          } else if (Array.isArray(row.tags)) {
+            // Already an array
+            tags = row.tags;
+          }
+          // Filter out null values
+          tags = tags.filter(tag => tag !== null);
+        }
+      } catch (e) {
+        console.warn(`Invalid JSON in tags for record ${row.id}: ${row.tags}, using empty array`);
+        tags = [];
+      }
+      
+      // Safely parse participants
+      try {
+        if (row.participants) {
+          if (typeof row.participants === 'string') {
+            participants = JSON.parse(row.participants);
+          } else if (Array.isArray(row.participants)) {
+            participants = row.participants;
+          }
+        }
+      } catch (e) {
+        console.warn(`Invalid JSON in participants for record ${row.id}: ${row.participants}, using empty array`);
+        participants = [];
+      }
+      
+      return {
+        ...row,
+        tags,
+        participants,
+        accessLevel: row.isPublic ? 'PUBLIC' : (row.isConfidential ? 'CONFIDENTIAL' : 'DEPARTMENT'),
+        allowedDepartments: [],
+        allowedUsers: []
+      };
+    });
   }
- /*
- static processRecordResults(rows) { //Fai ref Grok change 10-6-25
-  return rows.map(row => {
-    let tags = [];
-    try {
-      tags = row.tags ? JSON.parse(row.tags) : [];
-    } catch (e) {
-      console.warn(`Invalid JSON in tags for row ${row.id}: ${row.tags}, using empty array`);
-      tags = [];
-    }
-    return {
-      ...row,
-      tags,
-      participants: row.participants ? JSON.parse(row.participants) : [],
-      accessLevel: row.isPublic ? 'PUBLIC' : (row.isConfidential ? 'CONFIDENTIAL' : 'DEPARTMENT'),
-      allowedDepartments: [],
-      allowedUsers: []
-    };
-  });
-}
-*/
 
   // Apply tag filters after processing
   static applyTagFilters(records, tagFilters) {
@@ -133,7 +149,7 @@ class RecordService {
       WHERE id = ? AND (createdBy = ? OR ? = true)
     `;
     
-    const [rows] = await pool.execute(checkQuery, [recordId, userId, isAdmin]);
+    const [rows] = await pool.query(checkQuery, [recordId, userId, isAdmin]);
     return rows.length > 0;
   }
 

@@ -5,7 +5,7 @@ const RecordService = require('../../services/recordService');
 // Get all records with enhanced filtering and access control
 const getAllRecords = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const userInfo = req.user;
     
     console.log('User info:', userInfo);
@@ -39,7 +39,7 @@ const getAllRecords = async (req, res) => {
     console.log('Final query:', baseQuery);
     console.log('Query params:', allParams);
     
-    const [rows] = await pool.execute(baseQuery, allParams);
+    const [rows] = await pool.query(baseQuery, allParams);
     
     // Process the results
     const processedRows = RecordService.processRecordResults(rows);
@@ -60,7 +60,7 @@ const getAllRecords = async (req, res) => {
 const getRecordById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const userInfo = req.user;
     
     let query = RecordService.buildBaseQuery();
@@ -80,7 +80,7 @@ const getRecordById = async (req, res) => {
     
     query += ` GROUP BY r.id`;
     
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await pool.query(query, params);
     
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Record not found or access denied' });

@@ -3,7 +3,7 @@ const pool = require('../config/db');
 
 class ActivityLogService {
   static async logActivity(userId, action, details, recordId = null) {
-    await pool.execute(
+    await pool.query(
       `INSERT INTO activity_logs (userId, action, details, recordId) VALUES (?, ?, ?, ?)`,
       [userId, action, details, recordId]
     );
@@ -20,7 +20,7 @@ class ActivityLogService {
       ORDER BY al.timestamp DESC
     `;
     
-    const [rows] = await pool.execute(query, [recordId]);
+    const [rows] = await pool.query(query, [recordId]);
     
     return rows.map(row => ({
       id: row.id,

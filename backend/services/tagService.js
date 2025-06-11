@@ -21,7 +21,7 @@ class TagService {
       
       // If tag doesn't have an ID, create it
       if (!tagId || tagId === '') {
-        const [tagResult] = await pool.execute(
+        const [tagResult] = await pool.query(
           'INSERT INTO tags (name, color, description) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',
           [tag.name, tag.color || '#3B82F6', tag.description || '']
         );
@@ -29,7 +29,7 @@ class TagService {
       }
       
       // Link tag to record
-      await pool.execute(
+      await pool.query(
         'INSERT IGNORE INTO record_tags (recordId, tagId) VALUES (?, ?)',
         [recordId, tagId]
       );
@@ -38,7 +38,7 @@ class TagService {
 
   // Remove all tags from a record
   static async removeRecordTags(recordId) {
-    await pool.execute('DELETE FROM record_tags WHERE recordId = ?', [recordId]);
+    await pool.query('DELETE FROM record_tags WHERE recordId = ?', [recordId]);
   }
 }
 
