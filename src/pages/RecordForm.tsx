@@ -198,6 +198,7 @@ const RecordForm = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <BasicInformationForm
             record={record}
+            setRecord={setRecord}
             handleChange={handleChange}
             handleSelectChange={handleSelectChange}
             handleParticipantsChange={handleParticipantsChange}
