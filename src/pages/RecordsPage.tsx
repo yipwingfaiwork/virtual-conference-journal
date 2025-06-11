@@ -31,7 +31,7 @@ const RecordsPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode<'table' | 'calendar'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
   const [tags, setTags] = useState<Tag[]>([]);
   const [financialPeriods, setFinancialPeriods] = useState<FinancialPeriod[]>([]);
   const [users, setUsers] = useState<User[]>([]);
