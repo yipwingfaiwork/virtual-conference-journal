@@ -15,11 +15,35 @@ const createRecord = async (req, res) => {
       outline,
       duration,
       participants,
-      departmentId,
+      department, // Frontend sends department name
+      departmentId, // Or departmentId directly
       financialPeriodId,
       tags,
       accessLevel
     } = req.body;
+
+    console.log('Create record request body:', req.body);
+
+    // Handle department mapping - convert department name to ID if needed
+    let finalDepartmentId = departmentId;
+    
+    if (!finalDepartmentId && department) {
+      // Map department name to ID
+      const departmentMap = {
+        'Operations': 1,
+        'Finance': 2, 
+        'Management': 3,
+        'Administration': 4
+      };
+      finalDepartmentId = departmentMap[department];
+    }
+
+    // If still no departmentId, use user's department
+    if (!finalDepartmentId) {
+      finalDepartmentId = req.user.departmentId;
+    }
+
+    console.log('Final departmentId:', finalDepartmentId);
 
     // Map access level to database fields
     const { isPublic, isConfidential } = RecordService.mapAccessLevel(accessLevel);
@@ -35,7 +59,7 @@ const createRecord = async (req, res) => {
 
     const [result] = await pool.query(insertQuery, [
       title, date, textRecord, outline, duration, participantsJson,
-      departmentId, financialPeriodId, isPublic, isConfidential, userId
+      finalDepartmentId, financialPeriodId, isPublic, isConfidential, userId
     ]);
 
     const recordId = result.insertId;
@@ -82,11 +106,25 @@ const updateRecord = async (req, res) => {
       outline,
       duration,
       participants,
+      department,
       departmentId,
       financialPeriodId,
       tags,
       accessLevel
     } = req.body;
+
+    // Handle department mapping
+    let finalDepartmentId = departmentId;
+    
+    if (!finalDepartmentId && department) {
+      const departmentMap = {
+        'Operations': 1,
+        'Finance': 2,
+        'Management': 3,
+        'Administration': 4
+      };
+      finalDepartmentId = departmentMap[department];
+    }
 
     // Map access level to database fields
     const { isPublic, isConfidential } = RecordService.mapAccessLevel(accessLevel);
@@ -103,7 +141,7 @@ const updateRecord = async (req, res) => {
 
     await pool.query(updateQuery, [
       title, date, textRecord, outline, duration, participantsJson,
-      departmentId, financialPeriodId, isPublic, isConfidential, id
+      finalDepartmentId, financialPeriodId, isPublic, isConfidential, id
     ]);
 
     // Remove existing tags and add new ones

@@ -109,24 +109,24 @@ const BasicInformationForm = ({
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="department">
+          <Label htmlFor="departmentId">
             Department <span className="text-destructive">*</span>
           </Label>
           <div className="relative">
             <Building className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Select 
-              name="department"
-              value={record.department} 
-              onValueChange={(value) => handleSelectChange('department', value)}
+              name="departmentId"
+              value={record.departmentId?.toString() || record.department} 
+              onValueChange={(value) => handleSelectChange('departmentId', value)}
             >
-              <SelectTrigger id="department" className="pl-8">
+              <SelectTrigger id="departmentId" className="pl-8">
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Operations">Operations</SelectItem>
-                <SelectItem value="Finance">Finance</SelectItem>
-                <SelectItem value="Management">Management</SelectItem>
-                <SelectItem value="Administration">Administration</SelectItem>
+                <SelectItem value="1">Operations</SelectItem>
+                <SelectItem value="2">Finance</SelectItem>
+                <SelectItem value="3">Management</SelectItem>
+                <SelectItem value="4">Administration</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -26,13 +27,14 @@ const RecordForm = () => {
   const [record, setRecord] = useState<Partial<ConferenceRecord>>({
     date: new Date().toISOString().slice(0, 16), // Format: YYYY-MM-DDTHH:MM
     duration: '',
-    department: '',
+    departmentId: undefined,
     title: '',
     participants: [],
     videoLink: '',
     textRecord: '',
     outline: '',
     remark: '',
+    accessLevel: 'DEPARTMENT',
   });
   
   const [participantsInput, setParticipantsInput] = useState('');
@@ -49,11 +51,20 @@ const RecordForm = () => {
       }
       
       setUser(userData);
+      
+      // Set default department for new records
+      if (mode === 'create') {
+        setRecord(prev => ({
+          ...prev,
+          departmentId: userData.departmentId
+        }));
+      }
+      
       setLoading(false);
     };
     
     loadData();
-  }, [navigate]);
+  }, [navigate, mode]);
   
   useEffect(() => {
     if (mode === 'edit' && existingRecord && !recordLoading) {
@@ -86,7 +97,11 @@ const RecordForm = () => {
   };
   
   const handleSelectChange = (name: string, value: string) => {
-    setRecord(prev => ({ ...prev, [name]: value }));
+    if (name === 'departmentId') {
+      setRecord(prev => ({ ...prev, departmentId: parseInt(value) }));
+    } else {
+      setRecord(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleRadioChange = (name: string, value: string) => {
@@ -107,7 +122,7 @@ const RecordForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!record.title || !record.date || !record.department) {
+    if (!record.title || !record.date || !record.departmentId) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -119,15 +134,20 @@ const RecordForm = () => {
     setIsSubmitting(true);
     
     try {
+      const recordData = {
+        ...record,
+        createdBy: user.id,
+        departmentId: record.departmentId || user.departmentId
+      };
+      
+      console.log('Submitting record data:', recordData);
+      
       if (mode === 'create') {
-        createRecord({
-          ...record,
-          createdBy: user.id
-        });
+        createRecord(recordData);
       } else if (mode === 'edit' && id) {
         updateRecord({
           id,
-          data: record
+          data: recordData
         });
       }
       
