@@ -15,30 +15,30 @@ const createRecord = async (req, res) => {
       outline,
       duration,
       participants,
-      department, // Frontend sends department name
-      departmentId, // Or departmentId directly
+      department,
+      departmentId,
       financialPeriodId,
       tags,
-      accessLevel
+      accessLevel,
+      videoLink,
+      remark
     } = req.body;
 
     console.log('Create record request body:', req.body);
 
-    // Handle department mapping - convert department name to ID if needed
+    // Handle department mapping
     let finalDepartmentId = departmentId;
     
     if (!finalDepartmentId && department) {
-      // Map department name to ID
       const departmentMap = {
-        'Operations': 1,
-        'Finance': 2, 
-        'Management': 3,
-        'Administration': 4
+        'Operations': '1',
+        'Finance': '2', 
+        'Management': '3',
+        'Administration': '4'
       };
       finalDepartmentId = departmentMap[department];
     }
 
-    // If still no departmentId, use user's department
     if (!finalDepartmentId) {
       finalDepartmentId = req.user.departmentId;
     }
@@ -51,15 +51,17 @@ const createRecord = async (req, res) => {
     const insertQuery = `
       INSERT INTO records (
         title, date, textRecord, outline, duration, participants,
-        departmentId, financialPeriodId, isPublic, isConfidential, createdBy
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        departmentId, financialPeriodId, isPublic, isConfidential, 
+        createdBy, videoLink, remark
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const participantsJson = participants ? JSON.stringify(participants) : null;
 
     const [result] = await pool.query(insertQuery, [
       title, date, textRecord, outline, duration, participantsJson,
-      finalDepartmentId, financialPeriodId, isPublic, isConfidential, userId
+      finalDepartmentId, financialPeriodId, isPublic, isConfidential, 
+      userId, videoLink || null, remark || null
     ]);
 
     const recordId = result.insertId;
@@ -110,7 +112,9 @@ const updateRecord = async (req, res) => {
       departmentId,
       financialPeriodId,
       tags,
-      accessLevel
+      accessLevel,
+      videoLink,
+      remark
     } = req.body;
 
     // Handle department mapping
@@ -118,10 +122,10 @@ const updateRecord = async (req, res) => {
     
     if (!finalDepartmentId && department) {
       const departmentMap = {
-        'Operations': 1,
-        'Finance': 2,
-        'Management': 3,
-        'Administration': 4
+        'Operations': '1',
+        'Finance': '2',
+        'Management': '3',
+        'Administration': '4'
       };
       finalDepartmentId = departmentMap[department];
     }
@@ -133,7 +137,8 @@ const updateRecord = async (req, res) => {
       UPDATE records SET
         title = ?, date = ?, textRecord = ?, outline = ?, duration = ?,
         participants = ?, departmentId = ?, financialPeriodId = ?,
-        isPublic = ?, isConfidential = ?, updatedAt = CURRENT_TIMESTAMP
+        isPublic = ?, isConfidential = ?, videoLink = ?, remark = ?,
+        updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
 
@@ -141,7 +146,8 @@ const updateRecord = async (req, res) => {
 
     await pool.query(updateQuery, [
       title, date, textRecord, outline, duration, participantsJson,
-      finalDepartmentId, financialPeriodId, isPublic, isConfidential, id
+      finalDepartmentId, financialPeriodId, isPublic, isConfidential, 
+      videoLink || null, remark || null, id
     ]);
 
     // Remove existing tags and add new ones

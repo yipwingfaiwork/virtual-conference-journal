@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -78,7 +77,13 @@ const RecordForm = () => {
         return;
       }
       
-      setRecord(existingRecord);
+      // Convert date from database format to datetime-local format
+      const formattedRecord = {
+        ...existingRecord,
+        date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : ''
+      };
+      
+      setRecord(formattedRecord);
       setParticipantsInput(existingRecord.participants.join(', '));
     }
   }, [existingRecord, mode, navigate, recordLoading, toast, user]);

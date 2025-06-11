@@ -5,6 +5,6 @@ const activityLogController = require('../controllers/activityLogController');
 const { authenticateToken } = require('../middleware/auth');
 
 // Activity logs routes
-router.get('/', authenticateToken, activityLogController.getActivityLogs);
+router.get('/', authenticateToken, activityLogController.getAllActivityLogs);
 
 module.exports = router;

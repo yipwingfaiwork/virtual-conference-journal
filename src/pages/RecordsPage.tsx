@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentUser } from '@/lib/auth';
@@ -10,6 +9,7 @@ import RecordHeader from '@/components/records/RecordHeader';
 import EnhancedRecordSearchBar from '@/components/records/EnhancedRecordSearchBar';
 import RecordsTable from '@/components/records/RecordsTable';
 import CalendarView from '@/components/records/CalendarView';
+import RecordsSubMenu from '@/components/records/RecordsSubMenu';
 
 interface User {
   id: string;
@@ -31,18 +31,16 @@ const RecordsPage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+  const [viewMode, setViewMode<'table' | 'calendar'>('table');
   const [tags, setTags] = useState<Tag[]>([]);
   const [financialPeriods, setFinancialPeriods] = useState<FinancialPeriod[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string; }[]>([]);
   
-  // Fetch records from API using our hook
   const { records, isLoading, error } = useRecords(filters);
   
-  // Get creator names using our custom hook
   const { getCreatorName } = useCreatorNames(records);
   
-  // Parse search query from URL
   useEffect(() => {
     const fetchUser = async () => {
       const currentUser = await getCurrentUser();
@@ -55,15 +53,17 @@ const RecordsPage = () => {
     
     const fetchDropdownData = async () => {
       try {
-        const [tagsRes, periodsRes, usersRes] = await Promise.all([
+        const [tagsRes, periodsRes, usersRes, departmentsRes] = await Promise.all([
           apiClient.get('/tags').catch(() => ({ data: [] })),
           apiClient.get('/financial-periods').catch(() => ({ data: [] })),
-          apiClient.get('/users').catch(() => ({ data: [] }))
+          apiClient.get('/users').catch(() => ({ data: [] })),
+          apiClient.get('/departments').catch(() => ({ data: [] }))
         ]);
         
         setTags(tagsRes.data);
         setFinancialPeriods(periodsRes.data);
         setUsers(usersRes.data);
+        setDepartments(departmentsRes.data);
       } catch (error) {
         console.error('Error fetching dropdown data:', error);
       }
@@ -105,7 +105,6 @@ const RecordsPage = () => {
     setViewMode('table');
   };
 
-  // Convert records to calendar events
   const calendarEvents: CalendarEvent[] = records ? records.map(record => ({
     id: record.id,
     title: record.title,
@@ -120,32 +119,47 @@ const RecordsPage = () => {
     <div className="p-4 sm:p-6 md:p-8">
       <RecordHeader />
       
-      <EnhancedRecordSearchBar
-        filters={filters}
-        onFiltersChange={setFilters}
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-        clearFilters={clearFilters}
-        tags={tags}
-        financialPeriods={financialPeriods}
-        users={users}
-        onCalendarView={handleCalendarView}
-      />
-      
-      {viewMode === 'calendar' ? (
-        <CalendarView 
-          events={calendarEvents}
-          onEventClick={handleEventClick}
-          onDateSelect={handleDateSelect}
-        />
-      ) : (
-        <RecordsTable 
-          records={records || []}
-          isLoading={isLoading}
-          error={error}
-          getCreatorName={getCreatorName}
-        />
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <RecordsSubMenu
+            filters={filters}
+            onFiltersChange={setFilters}
+            tags={tags}
+            financialPeriods={financialPeriods}
+            users={users}
+            departments={departments}
+          />
+        </div>
+        
+        <div className="lg:col-span-3">
+          <EnhancedRecordSearchBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            clearFilters={clearFilters}
+            tags={tags}
+            financialPeriods={financialPeriods}
+            users={users}
+            onCalendarView={handleCalendarView}
+          />
+          
+          {viewMode === 'calendar' ? (
+            <CalendarView 
+              events={calendarEvents}
+              onEventClick={handleEventClick}
+              onDateSelect={handleDateSelect}
+            />
+          ) : (
+            <RecordsTable 
+              records={records || []}
+              isLoading={isLoading}
+              error={error}
+              getCreatorName={getCreatorName}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
