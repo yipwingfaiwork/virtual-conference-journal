@@ -98,7 +98,7 @@ const RecordForm = () => {
   
   const handleSelectChange = (name: string, value: string) => {
     if (name === 'departmentId') {
-      setRecord(prev => ({ ...prev, departmentId: parseInt(value) }));
+      setRecord(prev => ({ ...prev, departmentId: value }));
     } else {
       setRecord(prev => ({ ...prev, [name]: value }));
     }

@@ -116,7 +116,7 @@ const BasicInformationForm = ({
             <Building className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Select 
               name="departmentId"
-              value={record.departmentId?.toString() || record.department} 
+              value={record.departmentId || record.department} 
               onValueChange={(value) => handleSelectChange('departmentId', value)}
             >
               <SelectTrigger id="departmentId" className="pl-8">
