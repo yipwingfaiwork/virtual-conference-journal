@@ -51,7 +51,19 @@ exports.getUserById = async (req, res) => {
 // Create new user
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password, phone, address, departmentId, isAdmin } = req.body;
+    const { name, email, password, phone, address, departmentId, isAdmin, isActive } = req.body;
+    
+    console.log('Create user request body:', req.body);
+    
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email and password are required' });
+    }
+
+    // Validate password
+    if (password.trim() === '') {
+      return res.status(400).json({ error: 'Password cannot be empty' });
+    }
     
     // Check if user already exists
     const [existingUsers] = await pool.query(
@@ -64,13 +76,13 @@ exports.createUser = async (req, res) => {
     }
     
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
     
     // Create user
     const [result] = await pool.query(
-      `INSERT INTO users (name, email, password, phone, address, departmentId, isAdmin) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, phone || null, address || null, departmentId || null, isAdmin || false]
+      `INSERT INTO users (name, email, password, phone, address, departmentId, isAdmin, isActive) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, email, hashedPassword, phone || null, address || null, departmentId || null, isAdmin || false, isActive !== false]
     );
     
     // Get created user
@@ -84,6 +96,7 @@ exports.createUser = async (req, res) => {
       WHERE u.id = ?
     `, [result.insertId]);
     
+    console.log('User created successfully:', users[0].email);
     res.status(201).json(users[0]);
   } catch (error) {
     console.error('Error creating user:', error);

@@ -9,6 +9,7 @@ import { Edit, Trash2, Plus, Search, UserCheck, UserX } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Department } from '@/lib/types';
 import apiClient from '@/services/api-service';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,17 @@ interface User {
   updatedAt: string;
 }
 
+interface UserFormData {
+  name: string;
+  email: string;
+  password?: string;
+  phone: string;
+  address: string;
+  departmentId: string;
+  isAdmin: boolean;
+  isActive: boolean;
+}
+
 const AdminUsersManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -36,10 +48,11 @@ const AdminUsersManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<Partial<User>>({
+  const form = useForm<UserFormData>({
     defaultValues: {
       name: '',
       email: '',
+      password: '',
       phone: '',
       address: '',
       departmentId: '',
@@ -98,6 +111,7 @@ const AdminUsersManagement = () => {
     form.reset({
       name: '',
       email: '',
+      password: '',
       phone: '',
       address: '',
       departmentId: '',
@@ -107,16 +121,35 @@ const AdminUsersManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = async (data: Partial<User>) => {
+  const handleSubmit = async (data: UserFormData) => {
     try {
+      // Validate password for new users
+      if (!editingUser && (!data.password || data.password.trim() === '')) {
+        toast({
+          title: "Error",
+          description: "Password is required for new users",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const submitData = { ...data };
+      
+      // Remove password field if it's empty for updates
+      if (editingUser && (!data.password || data.password.trim() === '')) {
+        delete submitData.password;
+      }
+
+      console.log('Submitting user data:', submitData);
+
       if (editingUser) {
-        await apiClient.put(`/users/${editingUser.id}`, data);
+        await apiClient.put(`/users/${editingUser.id}`, submitData);
         toast({
           title: "Success",
           description: "User updated successfully",
         });
       } else {
-        await apiClient.post('/users', data);
+        await apiClient.post('/users', submitData);
         toast({
           title: "Success",
           description: "User created successfully",
@@ -208,6 +241,7 @@ const AdminUsersManagement = () => {
                   <FormField
                     control={form.control}
                     name="name"
+                    rules={{ required: 'Name is required' }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Name</FormLabel>
@@ -222,11 +256,41 @@ const AdminUsersManagement = () => {
                   <FormField
                     control={form.control}
                     name="email"
+                    rules={{ 
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^\S+@\S+$/i,
+                        message: 'Invalid email address'
+                      }
+                    }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input {...field} type="email" placeholder="Enter email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    rules={!editingUser ? { 
+                      required: 'Password is required',
+                      minLength: {
+                        value: 6,
+                        message: 'Password must be at least 6 characters'
+                      }
+                    } : {}}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Password {editingUser ? '(leave blank to keep current)' : '*'}
+                        </FormLabel>
+                        <FormControl>
+                          <Input {...field} type="password" placeholder="Enter password" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -282,6 +346,42 @@ const AdminUsersManagement = () => {
                           </SelectContent>
                         </Select>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="isAdmin"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={field.onChange} 
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Administrator</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={field.onChange} 
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Active</FormLabel>
+                        </div>
                       </FormItem>
                     )}
                   />

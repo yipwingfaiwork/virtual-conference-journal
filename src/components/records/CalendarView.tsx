@@ -1,11 +1,9 @@
 
 import { useState } from 'react';
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { CalendarEvent } from '@/lib/types';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CalendarViewProps {
   events: CalendarEvent[];
@@ -14,107 +12,122 @@ interface CalendarViewProps {
 }
 
 const CalendarView = ({ events, onEventClick, onDateSelect }: CalendarViewProps) => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
+  // Get events for the selected date
   const getEventsForDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
     return events.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.toDateString() === date.toDateString();
+      const eventDate = new Date(event.date).toISOString().split('T')[0];
+      return eventDate === dateStr;
     });
   };
 
-  const getDaysWithEvents = () => {
-    return events.map(event => new Date(event.date));
+  // Get all dates that have events
+  const getEventDates = () => {
+    return events.map(event => {
+      const date = new Date(event.date);
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    });
   };
 
-  const selectedDateEvents = getEventsForDate(selectedDate);
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      onDateSelect(date);
+    }
+  };
+
+  const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : [];
+  const eventDates = getEventDates();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Meeting Calendar</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => {
-              if (date) {
-                setSelectedDate(date);
-                onDateSelect(date);
-              }
-            }}
-            month={currentMonth}
-            onMonthChange={setCurrentMonth}
-            modifiers={{
-              hasEvents: getDaysWithEvents()
-            }}
-            modifiersStyles={{
-              hasEvents: { 
-                backgroundColor: 'var(--teal)',
-                color: 'white',
-                fontWeight: 'bold'
-              }
-            }}
-            className="rounded-md border"
-          />
-        </CardContent>
-      </Card>
+      <div className="lg:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Calendar View</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              className="rounded-md border"
+              modifiers={{
+                hasEvents: eventDates
+              }}
+              modifiersStyles={{
+                hasEvents: { 
+                  backgroundColor: '#ac7556',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }
+              }}
+            />
+            <div className="mt-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-4 h-4 rounded" 
+                  style={{ backgroundColor: '#ac7556' }}
+                ></div>
+                <span>Days with conference records</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Events on {selectedDate.toLocaleDateString()}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {selectedDateEvents.length > 0 ? (
-            <div className="space-y-3">
-              {selectedDateEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => onEventClick(event.id)}
-                >
-                  <h4 className="font-medium text-sm">{event.title}</h4>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {new Date(event.date).toLocaleTimeString()} • {event.duration}
-                  </p>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline" className="text-xs">
-                      {event.department}
-                    </Badge>
-                    <Badge 
-                      variant={event.accessLevel === 'CONFIDENTIAL' ? 'destructive' : 'secondary'}
-                      className="text-xs"
-                    >
+      <div className="lg:col-span-1">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Events for {selectedDate?.toLocaleDateString() || 'Selected Date'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedDateEvents.length === 0 ? (
+              <p className="text-muted-foreground">No events on this date</p>
+            ) : (
+              <div className="space-y-3">
+                {selectedDateEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => onEventClick(event.id)}
+                  >
+                    <h4 className="font-medium">{event.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(event.date).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })} - {event.duration} hours
+                    </p>
+                    <p className="text-sm text-muted-foreground">{event.department}</p>
+                    {event.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {event.tags.map((tag) => (
+                          <Badge
+                            key={tag.id}
+                            variant="outline"
+                            className="text-xs"
+                            style={{ borderColor: tag.color }}
+                          >
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    <Badge variant="outline" className="mt-2 text-xs">
                       {event.accessLevel}
                     </Badge>
                   </div>
-                  {event.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {event.tags.map((tag) => (
-                        <Badge
-                          key={tag.id}
-                          variant="outline"
-                          className="text-xs"
-                          style={{ backgroundColor: tag.color + '20', borderColor: tag.color }}
-                        >
-                          {tag.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-sm">No events on this date.</p>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
