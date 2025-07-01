@@ -1,8 +1,10 @@
+
 import { useEffect, useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { X } from 'lucide-react';
 import { ConferenceRecord, Tag } from '@/lib/types';
 import apiClient from '@/services/api-service';
@@ -190,6 +192,17 @@ const BasicInformationForm = ({
               <SelectItem value="CONFIDENTIAL">Confidential</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="aiTranslate"
+            checked={record.aiTranslate || false}
+            onCheckedChange={(checked) => setRecord({ ...record, aiTranslate: checked })}
+          />
+          <Label htmlFor="aiTranslate">AI Translate?</Label>
         </div>
       </div>
 

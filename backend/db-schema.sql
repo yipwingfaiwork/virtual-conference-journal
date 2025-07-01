@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS records (
   financialPeriodId INT,
   isPublic BOOLEAN DEFAULT false,
   isConfidential BOOLEAN DEFAULT false,
+  aiTranslate BOOLEAN DEFAULT false,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (createdBy) REFERENCES users(id) ON DELETE RESTRICT,
@@ -127,10 +128,10 @@ INSERT IGNORE INTO users (name, email, password, phone, address, departmentId, i
 ('Bob User', 'user4@example.com', '$2a$12$Ju7vjk4.0c3bsrXnb.XvBuVnrop4oBI10wGMwGaqS2E8u9O6bEICS', '123-456-7893', '126 User Lane', 4, false);
 
 -- Sample records
-INSERT IGNORE INTO records (date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential) VALUES 
-('2024-12-01 10:00:00', '2 hours', 1, 'Q4 Strategic Planning', '["Admin User", "John Manager"]', 'https://example.com/video1', 'Strategic planning meeting discussing Q4 objectives and 2025 roadmap.', '1. Review Q4 performance\n2. Set 2025 goals\n3. Budget allocation', 'Follow up on action items next week', 1, 5, false, false),
-('2024-12-02 14:00:00', '1.5 hours', 2, 'Daily Operations Review', '["John Manager", "Jane Supervisor"]', '', 'Daily review of operational metrics and team performance.', '1. Review metrics\n2. Address issues\n3. Plan improvements', '', 2, 5, true, false),
-('2024-12-03 09:00:00', '45 minutes', 3, 'Budget Meeting', '["Jane Supervisor", "Admin User"]', '', 'Quarterly budget review and financial planning.', '1. Review expenses\n2. Budget projections\n3. Cost optimization', 'Confidential budget information', 3, 5, false, true);
+INSERT IGNORE INTO records (date, duration, departmentId, title, participants, videoLink, textRecord, outline, remark, createdBy, financialPeriodId, isPublic, isConfidential, aiTranslate) VALUES 
+('2024-12-01 10:00:00', '2 hours', 1, 'Q4 Strategic Planning', '["Admin User", "John Manager"]', 'https://example.com/video1', 'Strategic planning meeting discussing Q4 objectives and 2025 roadmap.', '1. Review Q4 performance\n2. Set 2025 goals\n3. Budget allocation', 'Follow up on action items next week', 1, 5, false, false, false),
+('2024-12-02 14:00:00', '1.5 hours', 2, 'Daily Operations Review', '["John Manager", "Jane Supervisor"]', '', 'Daily review of operational metrics and team performance.', '1. Review metrics\n2. Address issues\n3. Plan improvements', '', 2, 5, true, false, true),
+('2024-12-03 09:00:00', '45 minutes', 3, 'Budget Meeting', '["Jane Supervisor", "Admin User"]', '', 'Quarterly budget review and financial planning.', '1. Review expenses\n2. Budget projections\n3. Cost optimization', 'Confidential budget information', 3, 5, false, true, false);
 
 -- Link sample records to tags
 INSERT IGNORE INTO record_tags (recordId, tagId) VALUES 

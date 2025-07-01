@@ -21,7 +21,8 @@ const createRecord = async (req, res) => {
       tags,
       accessLevel,
       videoLink,
-      remark
+      remark,
+      aiTranslate
     } = req.body;
 
     console.log('Create record request body:', req.body);
@@ -52,8 +53,8 @@ const createRecord = async (req, res) => {
       INSERT INTO records (
         title, date, textRecord, outline, duration, participants,
         departmentId, financialPeriodId, isPublic, isConfidential, 
-        createdBy, videoLink, remark
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        createdBy, videoLink, remark, aiTranslate
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const participantsJson = participants ? JSON.stringify(participants) : null;
@@ -61,7 +62,7 @@ const createRecord = async (req, res) => {
     const [result] = await pool.query(insertQuery, [
       title, date, textRecord, outline, duration, participantsJson,
       finalDepartmentId, financialPeriodId, isPublic, isConfidential, 
-      userId, videoLink || null, remark || null
+      userId, videoLink || null, remark || null, aiTranslate || false
     ]);
 
     const recordId = result.insertId;
@@ -114,7 +115,8 @@ const updateRecord = async (req, res) => {
       tags,
       accessLevel,
       videoLink,
-      remark
+      remark,
+      aiTranslate
     } = req.body;
 
     // Handle department mapping
@@ -138,7 +140,7 @@ const updateRecord = async (req, res) => {
         title = ?, date = ?, textRecord = ?, outline = ?, duration = ?,
         participants = ?, departmentId = ?, financialPeriodId = ?,
         isPublic = ?, isConfidential = ?, videoLink = ?, remark = ?,
-        updatedAt = CURRENT_TIMESTAMP
+        aiTranslate = ?, updatedAt = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
 
@@ -147,7 +149,7 @@ const updateRecord = async (req, res) => {
     await pool.query(updateQuery, [
       title, date, textRecord, outline, duration, participantsJson,
       finalDepartmentId, financialPeriodId, isPublic, isConfidential, 
-      videoLink || null, remark || null, id
+      videoLink || null, remark || null, aiTranslate || false, id
     ]);
 
     // Remove existing tags and add new ones

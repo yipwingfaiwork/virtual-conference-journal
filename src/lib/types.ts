@@ -59,6 +59,7 @@ export interface ConferenceRecord {
   allowedDepartments?: string[];
   allowedUsers?: string[];
   tags: Tag[];
+  aiTranslate: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -34,6 +34,7 @@ const RecordForm = () => {
     outline: '',
     remark: '',
     accessLevel: 'DEPARTMENT',
+    aiTranslate: false,
   });
   
   const [participantsInput, setParticipantsInput] = useState('');
@@ -77,14 +78,26 @@ const RecordForm = () => {
         return;
       }
       
-      // Convert date from database format to datetime-local format
+      // Convert date from database format to datetime-local format and set all fields
       const formattedRecord = {
         ...existingRecord,
-        date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : ''
+        date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : '',
+        title: existingRecord.title || '',
+        duration: existingRecord.duration || '',
+        departmentId: existingRecord.departmentId || '',
+        participants: existingRecord.participants || [],
+        videoLink: existingRecord.videoLink || '',
+        textRecord: existingRecord.textRecord || '',
+        outline: existingRecord.outline || '',
+        remark: existingRecord.remark || '',
+        accessLevel: existingRecord.accessLevel || 'DEPARTMENT',
+        aiTranslate: existingRecord.aiTranslate || false,
+        tags: existingRecord.tags || []
       };
       
+      console.log('Setting record with formatted data:', formattedRecord);
       setRecord(formattedRecord);
-      setParticipantsInput(existingRecord.participants.join(', '));
+      setParticipantsInput(existingRecord.participants ? existingRecord.participants.join(', ') : '');
     }
   }, [existingRecord, mode, navigate, recordLoading, toast, user]);
   
@@ -142,7 +155,8 @@ const RecordForm = () => {
       const recordData = {
         ...record,
         createdBy: user.id,
-        departmentId: record.departmentId || user.departmentId
+        departmentId: record.departmentId || user.departmentId,
+        aiTranslate: record.aiTranslate || false
       };
       
       console.log('Submitting record data:', recordData);
