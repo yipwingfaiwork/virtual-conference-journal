@@ -1,9 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ConferenceRecord } from '@/lib/types';
-import { Calendar, Clock, Users, Building2, Shield, Translate } from 'lucide-react';
+import { Calendar, Clock, Users, Building2, Shield, Languages } from 'lucide-react';
 
 interface RecordConferenceDetailsProps {
   record: ConferenceRecord;
@@ -78,7 +77,7 @@ const RecordConferenceDetails = ({ record, creatorName }: RecordConferenceDetail
         {record.aiTranslate !== undefined && (
           <>
             <div className="flex items-start">
-              <Translate className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
+              <Languages className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">AI Translate:</p>
                 <Badge variant={record.aiTranslate ? "default" : "secondary"}>
