@@ -1,112 +1,24 @@
 
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { canUserModifyRecord, getCurrentUser } from '@/lib/auth';
-import { ConferenceRecord, User } from '@/lib/types';
-import { useRecord, useRecords } from '@/hooks/use-records';
+import { useRecordForm } from '@/hooks/use-record-form';
 import BasicInformationForm from '@/components/forms/BasicInformationForm';
 import OutlineForm from '@/components/forms/OutlineForm';
 import TextRecordForm from '@/components/forms/TextRecordForm';
 import FormActions from '@/components/forms/FormActions';
 
 const RecordForm = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  const { record: existingRecord, isLoading: recordLoading } = useRecord(id || '');
-  const { createRecord, updateRecord } = useRecords();
-  
-  const mode = id ? 'edit' : 'create';
-  
-  const [record, setRecord] = useState<Partial<ConferenceRecord>>({
-    date: new Date().toISOString().slice(0, 16),
-    duration: '',
-    departmentId: undefined,
-    title: '',
-    participants: [],
-    videoLink: '',
-    textRecord: '',
-    outline: '',
-    remark: '',
-    accessLevel: 'DEPARTMENT',
-    aiTranslate: false,
-    tags: []
-  });
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const userData = await getCurrentUser();
-      
-      if (!userData) {
-        navigate('/login');
-        return;
-      }
-      
-      setUser(userData);
-      
-      // Set default department for new records
-      if (mode === 'create') {
-        setRecord(prev => ({
-          ...prev,
-          departmentId: userData.departmentId
-        }));
-      }
-      
-      setLoading(false);
-    };
-    
-    loadData();
-  }, [navigate, mode]);
-  
-  // Separate useEffect for handling existing record data
-  useEffect(() => {
-    if (mode === 'edit' && existingRecord && !recordLoading && user) {
-      console.log('Loading existing record data:', existingRecord);
-      
-      // Check permission
-      if (!canUserModifyRecord(user, existingRecord.createdBy)) {
-        toast({
-          title: "Permission denied",
-          description: "You don't have permission to edit this record.",
-          variant: "destructive",
-        });
-        navigate('/records');
-        return;
-      }
-      
-      // Format the record data for the form with proper data mapping
-      const formattedRecord = {
-        id: existingRecord.id,
-        date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
-        title: existingRecord.title || '',
-        duration: existingRecord.duration || '',
-        departmentId: existingRecord.departmentId || user.departmentId,
-        participants: Array.isArray(existingRecord.participants) ? existingRecord.participants : [],
-        videoLink: existingRecord.videoLink || '',
-        textRecord: existingRecord.textRecord || '',
-        outline: existingRecord.outline || '',
-        remark: existingRecord.remark || '',
-        accessLevel: existingRecord.accessLevel || 'DEPARTMENT',
-        aiTranslate: existingRecord.aiTranslate === true,
-        tags: Array.isArray(existingRecord.tags) ? existingRecord.tags : [],
-        createdBy: existingRecord.createdBy,
-        createdAt: existingRecord.createdAt,
-        updatedAt: existingRecord.updatedAt
-      };
-      
-      console.log('Setting formatted record:', formattedRecord);
-      setRecord(formattedRecord);
-    }
-  }, [existingRecord, mode, navigate, recordLoading, toast, user]);
+  const {
+    record,
+    setRecord,
+    user,
+    loading,
+    recordLoading,
+    isSubmitting,
+    mode,
+    handleSubmit,
+    navigate
+  } = useRecordForm();
   
   if (loading || !user) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -115,60 +27,6 @@ const RecordForm = () => {
   if (mode === 'edit' && recordLoading) {
     return <div className="flex justify-center items-center h-screen">Loading record...</div>;
   }
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!record.title || !record.date || !record.departmentId) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      const recordData = {
-        ...record,
-        createdBy: user.id,
-        departmentId: record.departmentId || user.departmentId,
-        aiTranslate: record.aiTranslate || false
-      };
-      
-      console.log('Submitting record data:', recordData);
-      
-      if (mode === 'create') {
-        createRecord(recordData);
-      } else if (mode === 'edit' && id) {
-        updateRecord({
-          id,
-          data: recordData
-        });
-      }
-      
-      const successMessage = mode === 'create'
-        ? "Conference record created successfully"
-        : "Conference record updated successfully";
-      
-      toast({
-        title: "Success",
-        description: successMessage,
-      });
-      
-      navigate('/records');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
