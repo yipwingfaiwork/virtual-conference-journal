@@ -36,6 +36,7 @@ const BasicInformationForm = ({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [participantsText, setParticipantsText] = useState('');
 
   useEffect(() => {
     loadDepartments();
@@ -48,6 +49,13 @@ const BasicInformationForm = ({
       setSelectedTags(record.tags);
     }
   }, [record.tags]);
+
+  useEffect(() => {
+    // Initialize participants text from record
+    if (record.participants && Array.isArray(record.participants)) {
+      setParticipantsText(record.participants.join('\n'));
+    }
+  }, [record.participants]);
 
   const loadDepartments = async () => {
     try {
@@ -96,6 +104,14 @@ const BasicInformationForm = ({
       console.error('Error formatting date:', error);
       return '';
     }
+  };
+
+  const handleParticipantsTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setParticipantsText(text);
+    // Split by newlines and filter out empty lines
+    const participants = text.split('\n').map(p => p.trim()).filter(p => p !== '');
+    setRecord({ ...record, participants });
   };
 
   return (
@@ -161,11 +177,8 @@ const BasicInformationForm = ({
             id="record-participants"
             name="participants"
             className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            value={Array.isArray(record.participants) ? record.participants.join('\n') : ''}
-            onChange={(e) => {
-              const participants = e.target.value.split('\n').filter(p => p.trim() !== '');
-              setRecord({ ...record, participants });
-            }}
+            value={participantsText}
+            onChange={handleParticipantsTextChange}
             placeholder="Enter participant names, one per line"
           />
         </div>
@@ -205,7 +218,7 @@ const BasicInformationForm = ({
           <Switch
             id="record-ai-translate"
             name="aiTranslate"
-            checked={record.aiTranslate || false}
+            checked={record.aiTranslate === true}
             onCheckedChange={(checked) => setRecord({ ...record, aiTranslate: checked })}
           />
           <Label htmlFor="record-ai-translate">AI Translate?</Label>

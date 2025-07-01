@@ -39,7 +39,6 @@ const RecordForm = () => {
     tags: []
   });
   
-  const [participantsInput, setParticipantsInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
@@ -106,11 +105,6 @@ const RecordForm = () => {
       
       console.log('Setting formatted record:', formattedRecord);
       setRecord(formattedRecord);
-      
-      // Set participants input
-      if (Array.isArray(existingRecord.participants)) {
-        setParticipantsInput(existingRecord.participants.join(', '));
-      }
     }
   }, [existingRecord, mode, navigate, recordLoading, toast, user]);
   
@@ -121,33 +115,6 @@ const RecordForm = () => {
   if (mode === 'edit' && recordLoading) {
     return <div className="flex justify-center items-center h-screen">Loading record...</div>;
   }
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setRecord(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleSelectChange = (name: string, value: string) => {
-    if (name === 'departmentId') {
-      setRecord(prev => ({ ...prev, departmentId: value }));
-    } else {
-      setRecord(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleRadioChange = (name: string, value: string) => {
-    console.log('Radio change:', name, value);
-  };
-  
-  const handleParticipantsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setParticipantsInput(e.target.value);
-    const participants = e.target.value
-      .split(',')
-      .map(p => p.trim())
-      .filter(p => p);
-    
-    setRecord(prev => ({ ...prev, participants }));
-  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,22 +192,17 @@ const RecordForm = () => {
           <BasicInformationForm
             record={record}
             setRecord={setRecord}
-            handleChange={handleChange}
-            handleSelectChange={handleSelectChange}
-            handleParticipantsChange={handleParticipantsChange}
-            handleRadioChange={handleRadioChange}
-            participantsInput={participantsInput}
           />
           
           <div className="space-y-6">
             <OutlineForm 
               outline={record.outline || ''} 
-              handleChange={handleChange} 
+              handleChange={(e) => setRecord({ ...record, outline: e.target.value })} 
             />
             
             <TextRecordForm 
               textRecord={record.textRecord || ''} 
-              handleChange={handleChange} 
+              handleChange={(e) => setRecord({ ...record, textRecord: e.target.value })} 
             />
           </div>
         </div>
