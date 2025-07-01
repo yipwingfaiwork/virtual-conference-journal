@@ -84,28 +84,31 @@ const RecordForm = () => {
         return;
       }
       
-      // Format the record data for the form
+      // Format the record data for the form with proper data mapping
       const formattedRecord = {
-        ...existingRecord,
+        id: existingRecord.id,
         date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
         title: existingRecord.title || '',
         duration: existingRecord.duration || '',
         departmentId: existingRecord.departmentId || user.departmentId,
-        participants: existingRecord.participants || [],
+        participants: Array.isArray(existingRecord.participants) ? existingRecord.participants : [],
         videoLink: existingRecord.videoLink || '',
         textRecord: existingRecord.textRecord || '',
         outline: existingRecord.outline || '',
         remark: existingRecord.remark || '',
         accessLevel: existingRecord.accessLevel || 'DEPARTMENT',
-        aiTranslate: existingRecord.aiTranslate || false,
-        tags: existingRecord.tags || []
+        aiTranslate: existingRecord.aiTranslate === true || existingRecord.aiTranslate === 'true',
+        tags: Array.isArray(existingRecord.tags) ? existingRecord.tags : [],
+        createdBy: existingRecord.createdBy,
+        createdAt: existingRecord.createdAt,
+        updatedAt: existingRecord.updatedAt
       };
       
       console.log('Setting formatted record:', formattedRecord);
       setRecord(formattedRecord);
       
       // Set participants input
-      if (existingRecord.participants && Array.isArray(existingRecord.participants)) {
+      if (Array.isArray(existingRecord.participants)) {
         setParticipantsInput(existingRecord.participants.join(', '));
       }
     }

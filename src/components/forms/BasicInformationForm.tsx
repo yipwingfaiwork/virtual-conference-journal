@@ -102,9 +102,10 @@ const BasicInformationForm = ({
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Meeting Title</Label>
+          <Label htmlFor="record-title">Meeting Title</Label>
           <Input
-            id="title"
+            id="record-title"
+            name="title"
             value={record.title || ''}
             onChange={(e) => setRecord({ ...record, title: e.target.value })}
             placeholder="Enter meeting title"
@@ -112,9 +113,10 @@ const BasicInformationForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="date">Date & Time</Label>
+          <Label htmlFor="record-date">Date & Time</Label>
           <Input
-            id="date"
+            id="record-date"
+            name="date"
             type="datetime-local"
             value={formatDateForInput(record.date)}
             onChange={(e) => setRecord({ ...record, date: e.target.value })}
@@ -122,9 +124,10 @@ const BasicInformationForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duration">Duration (hours)</Label>
+          <Label htmlFor="record-duration">Duration (hours)</Label>
           <Input
-            id="duration"
+            id="record-duration"
+            name="duration"
             type="number"
             step="0.5"
             value={record.duration || ''}
@@ -134,12 +137,12 @@ const BasicInformationForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="department">Department</Label>
+          <Label htmlFor="record-department">Department</Label>
           <Select 
             value={record.departmentId || ''} 
             onValueChange={(value) => setRecord({ ...record, departmentId: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger id="record-department">
               <SelectValue placeholder="Select department" />
             </SelectTrigger>
             <SelectContent>
@@ -153,9 +156,10 @@ const BasicInformationForm = ({
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="participants">Participants (one per line)</Label>
+          <Label htmlFor="record-participants">Participants (one per line)</Label>
           <textarea
-            id="participants"
+            id="record-participants"
+            name="participants"
             className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             value={Array.isArray(record.participants) ? record.participants.join('\n') : ''}
             onChange={(e) => {
@@ -167,9 +171,10 @@ const BasicInformationForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="videoLink">Video Link</Label>
+          <Label htmlFor="record-video-link">Video Link</Label>
           <Input
-            id="videoLink"
+            id="record-video-link"
+            name="videoLink"
             type="url"
             value={record.videoLink || ''}
             onChange={(e) => setRecord({ ...record, videoLink: e.target.value })}
@@ -178,12 +183,12 @@ const BasicInformationForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="accessLevel">Access Level</Label>
+          <Label htmlFor="record-access-level">Access Level</Label>
           <Select 
             value={record.accessLevel || 'DEPARTMENT'} 
             onValueChange={(value) => setRecord({ ...record, accessLevel: value as any })}
           >
-            <SelectTrigger>
+            <SelectTrigger id="record-access-level">
               <SelectValue placeholder="Select access level" />
             </SelectTrigger>
             <SelectContent>
@@ -198,11 +203,12 @@ const BasicInformationForm = ({
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
           <Switch
-            id="aiTranslate"
+            id="record-ai-translate"
+            name="aiTranslate"
             checked={record.aiTranslate || false}
             onCheckedChange={(checked) => setRecord({ ...record, aiTranslate: checked })}
           />
-          <Label htmlFor="aiTranslate">AI Translate?</Label>
+          <Label htmlFor="record-ai-translate">AI Translate?</Label>
         </div>
       </div>
 
@@ -255,9 +261,10 @@ const BasicInformationForm = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="remark">Remark</Label>
+        <Label htmlFor="record-remark">Remark</Label>
         <textarea
-          id="remark"
+          id="record-remark"
+          name="remark"
           className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           value={record.remark || ''}
           onChange={(e) => setRecord({ ...record, remark: e.target.value })}
