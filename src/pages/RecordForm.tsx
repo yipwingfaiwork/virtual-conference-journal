@@ -97,7 +97,7 @@ const RecordForm = () => {
         outline: existingRecord.outline || '',
         remark: existingRecord.remark || '',
         accessLevel: existingRecord.accessLevel || 'DEPARTMENT',
-        aiTranslate: existingRecord.aiTranslate === true || existingRecord.aiTranslate === 'true',
+        aiTranslate: existingRecord.aiTranslate === true,
         tags: Array.isArray(existingRecord.tags) ? existingRecord.tags : [],
         createdBy: existingRecord.createdBy,
         createdAt: existingRecord.createdAt,
