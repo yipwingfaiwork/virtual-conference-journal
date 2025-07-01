@@ -1,8 +1,10 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ConferenceRecord } from '@/lib/types';
-import { Calendar, Clock, Users, Building2, Shield, Languages } from 'lucide-react';
+import { Calendar, Clock, Users, Building2, Shield, Languages, Download } from 'lucide-react';
 
 interface RecordConferenceDetailsProps {
   record: ConferenceRecord;
@@ -21,10 +23,37 @@ const RecordConferenceDetails = ({ record, creatorName }: RecordConferenceDetail
     }
   };
 
+  const downloadTextRecord = () => {
+    if (!record.textRecord) {
+      return;
+    }
+    
+    const element = document.createElement('a');
+    const file = new Blob([record.textRecord], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${record.title || 'record'}-text-record.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-medium">Conference Details</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-medium">Conference Details</CardTitle>
+          {record.textRecord && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadTextRecord}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download Text Record
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-start">

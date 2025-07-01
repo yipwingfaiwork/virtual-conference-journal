@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -24,7 +25,7 @@ const RecordForm = () => {
   const mode = id ? 'edit' : 'create';
   
   const [record, setRecord] = useState<Partial<ConferenceRecord>>({
-    date: new Date().toISOString().slice(0, 16), // Format: YYYY-MM-DDTHH:MM
+    date: new Date().toISOString().slice(0, 16),
     duration: '',
     departmentId: undefined,
     title: '',
@@ -35,6 +36,7 @@ const RecordForm = () => {
     remark: '',
     accessLevel: 'DEPARTMENT',
     aiTranslate: false,
+    tags: []
   });
   
   const [participantsInput, setParticipantsInput] = useState('');
@@ -66,9 +68,13 @@ const RecordForm = () => {
     loadData();
   }, [navigate, mode]);
   
+  // Separate useEffect for handling existing record data
   useEffect(() => {
-    if (mode === 'edit' && existingRecord && !recordLoading) {
-      if (user && !canUserModifyRecord(user, existingRecord.createdBy)) {
+    if (mode === 'edit' && existingRecord && !recordLoading && user) {
+      console.log('Loading existing record data:', existingRecord);
+      
+      // Check permission
+      if (!canUserModifyRecord(user, existingRecord.createdBy)) {
         toast({
           title: "Permission denied",
           description: "You don't have permission to edit this record.",
@@ -78,13 +84,13 @@ const RecordForm = () => {
         return;
       }
       
-      // Convert date from database format to datetime-local format and set all fields
+      // Format the record data for the form
       const formattedRecord = {
         ...existingRecord,
-        date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : '',
+        date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
         title: existingRecord.title || '',
         duration: existingRecord.duration || '',
-        departmentId: existingRecord.departmentId || '',
+        departmentId: existingRecord.departmentId || user.departmentId,
         participants: existingRecord.participants || [],
         videoLink: existingRecord.videoLink || '',
         textRecord: existingRecord.textRecord || '',
@@ -95,9 +101,13 @@ const RecordForm = () => {
         tags: existingRecord.tags || []
       };
       
-      console.log('Setting record with formatted data:', formattedRecord);
+      console.log('Setting formatted record:', formattedRecord);
       setRecord(formattedRecord);
-      setParticipantsInput(existingRecord.participants ? existingRecord.participants.join(', ') : '');
+      
+      // Set participants input
+      if (existingRecord.participants && Array.isArray(existingRecord.participants)) {
+        setParticipantsInput(existingRecord.participants.join(', '));
+      }
     }
   }, [existingRecord, mode, navigate, recordLoading, toast, user]);
   
@@ -123,7 +133,6 @@ const RecordForm = () => {
   };
 
   const handleRadioChange = (name: string, value: string) => {
-    // This function is no longer needed but keeping for compatibility
     console.log('Radio change:', name, value);
   };
   
