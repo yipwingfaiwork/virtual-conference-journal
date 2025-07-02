@@ -17,7 +17,7 @@ export const useRecordForm = () => {
   const { record: existingRecord, isLoading: recordLoading } = useRecord(id || '');
   const { createRecord, updateRecord } = useRecords();
   
-  const mode = id ? 'edit' : 'create';
+  const mode: 'edit' | 'create' = id ? 'edit' : 'create';
   
   const [record, setRecord] = useState<Partial<ConferenceRecord>>({
     date: new Date().toISOString().slice(0, 16),
