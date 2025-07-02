@@ -16,12 +16,24 @@ const BasicFields = ({ record, setRecord, departments }: BasicFieldsProps) => {
     if (!dateString) return '';
     try {
       const date = new Date(dateString);
-      return date.toISOString().slice(0, 16);
+      const formatted = date.toISOString().slice(0, 16);
+      console.log('BasicFields formatting date:', dateString, '->', formatted);
+      return formatted;
     } catch (error) {
       console.error('Error formatting date:', error);
       return '';
     }
   };
+
+  console.log('BasicFields render - record:', {
+    title: record.title,
+    date: record.date,
+    duration: record.duration,
+    departmentId: record.departmentId,
+    videoLink: record.videoLink,
+    accessLevel: record.accessLevel,
+    aiTranslate: record.aiTranslate
+  });
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

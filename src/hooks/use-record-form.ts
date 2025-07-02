@@ -49,7 +49,7 @@ export const useRecordForm = () => {
       if (mode === 'create') {
         setRecord(prev => ({
           ...prev,
-          departmentId: userData.departmentId
+          departmentId: String(userData.departmentId)
         }));
       }
       
@@ -73,12 +73,15 @@ export const useRecordForm = () => {
         return;
       }
       
+      // Ensure departmentId is a string for Select component
+      const departmentIdStr = existingRecord.departmentId ? String(existingRecord.departmentId) : String(user.departmentId);
+      
       const formattedRecord = {
         id: existingRecord.id,
         date: existingRecord.date ? new Date(existingRecord.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
         title: existingRecord.title || '',
-        duration: existingRecord.duration || '',
-        departmentId: existingRecord.departmentId || user.departmentId,
+        duration: String(existingRecord.duration || ''),
+        departmentId: departmentIdStr,
         participants: Array.isArray(existingRecord.participants) ? existingRecord.participants : [],
         videoLink: existingRecord.videoLink || '',
         textRecord: existingRecord.textRecord || '',
@@ -93,6 +96,7 @@ export const useRecordForm = () => {
       };
       
       console.log('Setting formatted record:', formattedRecord);
+      console.log('Department ID (original vs formatted):', existingRecord.departmentId, '->', departmentIdStr);
       setRecord(formattedRecord);
     }
   }, [existingRecord, mode, navigate, recordLoading, toast, user]);

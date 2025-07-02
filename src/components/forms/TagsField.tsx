@@ -21,7 +21,11 @@ const TagsField = ({ record, setRecord }: TagsFieldProps) => {
 
   useEffect(() => {
     if (record.tags && Array.isArray(record.tags)) {
+      console.log('TagsField updating selected tags:', record.tags);
       setSelectedTags(record.tags);
+    } else {
+      console.log('TagsField: no tags or not array:', record.tags);
+      setSelectedTags([]);
     }
   }, [record.tags]);
 

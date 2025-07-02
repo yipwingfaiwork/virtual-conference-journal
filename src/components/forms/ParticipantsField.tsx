@@ -14,7 +14,12 @@ const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {
 
   useEffect(() => {
     if (record.participants && Array.isArray(record.participants)) {
-      setParticipantsText(record.participants.join('\n'));
+      const newText = record.participants.join('\n');
+      console.log('ParticipantsField updating text:', newText);
+      setParticipantsText(newText);
+    } else {
+      console.log('ParticipantsField: no participants or not array:', record.participants);
+      setParticipantsText('');
     }
   }, [record.participants]);
 
