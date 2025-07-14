@@ -147,3 +147,5 @@ CREATE INDEX idx_records_created_by ON records(createdBy);
 CREATE INDEX idx_users_department ON users(departmentId);
 CREATE INDEX idx_activity_logs_user ON activity_logs(userId);
 CREATE INDEX idx_activity_logs_record ON activity_logs(recordId);
+CREATE INDEX idx_records_textRecord ON records(textRecord(255));
+CREATE INDEX idx_records_outline ON records(outline(255));
