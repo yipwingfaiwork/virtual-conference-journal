@@ -12,12 +12,12 @@ interface OutlineFormProps {
 const OutlineForm = ({ outline, handleChange }: OutlineFormProps) => {
   const handleRichTextChange = (value: string) => {
     // Create a synthetic event to match the expected interface
-    const syntheticEvent = {
-      target: {
-        name: 'outline',
-        value: value
-      }
-    } as React.ChangeEvent<HTMLTextAreaElement>;
+        const syntheticEvent = {
+        target: {
+          name: 'MeetingOutline',
+          value: value
+        }
+      } as React.ChangeEvent<HTMLTextAreaElement>;
     
     handleChange(syntheticEvent);
   };
@@ -31,7 +31,7 @@ const OutlineForm = ({ outline, handleChange }: OutlineFormProps) => {
         <div className="space-y-2">
           <div className="flex items-center">
             <AlignLeft className="h-4 w-4 mr-2 text-muted-foreground" />
-            <Label htmlFor="outline">Outline</Label>
+            <Label htmlFor="outline">Meeting Outline</Label>
           </div>
           <RichTextEditor
             value={outline}

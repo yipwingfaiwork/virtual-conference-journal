@@ -7,6 +7,7 @@ export interface User {
   address: string;
   departmentId: string;
   departmentName: string;
+  TelegramId?: string;
   isAdmin: boolean;
   isActive: boolean;
   createdAt: string;
@@ -46,8 +47,8 @@ export interface ConferenceRecord {
   title: string;
   participants: string[];
   videoLink: string;
-  textRecord: string;
-  outline: string;
+  MeetingFullRecord: string;
+  MeetingOutline: string;
   remark: string;
   createdBy: string;
   financialPeriodId?: string;

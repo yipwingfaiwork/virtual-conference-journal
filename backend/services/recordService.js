@@ -48,7 +48,7 @@ class RecordService {
     const params = [];
 
     if (queryParams.searchTerm) {
-      conditions.push(`(r.title LIKE ? OR r.textRecord LIKE ? OR r.outline LIKE ?)`);
+      conditions.push(`(r.title LIKE ? OR r.MeetingFullRecord LIKE ? OR r.MeetingOutline LIKE ?)`);
       const searchPattern = `%${queryParams.searchTerm}%`;
       params.push(searchPattern, searchPattern, searchPattern);
     }

@@ -24,14 +24,14 @@ const RecordConferenceDetails = ({ record, creatorName }: RecordConferenceDetail
   };
 
   const downloadTextRecord = () => {
-    if (!record.textRecord) {
+    if (!record.MeetingFullRecord) {
       return;
     }
     
     const element = document.createElement('a');
-    const file = new Blob([record.textRecord], { type: 'text/plain' });
+    const file = new Blob([record.MeetingFullRecord], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
-    element.download = `${record.title || 'record'}-text-record.txt`;
+    element.download = `${record.title || 'record'}-meeting-full-record.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -42,7 +42,7 @@ const RecordConferenceDetails = ({ record, creatorName }: RecordConferenceDetail
       <CardHeader className="pb-3">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium">Conference Details</CardTitle>
-          {record.textRecord && (
+          {record.MeetingFullRecord && (
             <Button
               variant="outline"
               size="sm"
@@ -50,7 +50,7 @@ const RecordConferenceDetails = ({ record, creatorName }: RecordConferenceDetail
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Download Text Record
+              Download Meeting Full Record
             </Button>
           )}
         </div>

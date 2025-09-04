@@ -18,19 +18,19 @@ const RecordContentSections = ({ record }: RecordContentSectionsProps) => {
         <CardContent>
           <div 
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: record.outline }}
+            dangerouslySetInnerHTML={{ __html: record.MeetingOutline }}
           />
         </CardContent>
       </Card>
       
       <Card className="md:row-span-2">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-medium">Text Record</CardTitle>
+          <CardTitle className="text-lg font-medium">Meeting Full Record</CardTitle>
         </CardHeader>
         <CardContent>
           <div 
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: record.textRecord }}
+            dangerouslySetInnerHTML={{ __html: record.MeetingFullRecord }}
           />
         </CardContent>
       </Card>

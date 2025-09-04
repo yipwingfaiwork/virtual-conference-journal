@@ -82,12 +82,12 @@ const RecordTableRow = ({ record, getCreatorName }: RecordTableRowProps) => {
                 <Separator />
                 <div>
                   <h3 className="text-sm font-medium mb-1">Meeting Outline</h3>
-                  <p className="text-sm whitespace-pre-line">{record.outline}</p>
+                  <p className="text-sm whitespace-pre-line">{record.MeetingOutline}</p>
                 </div>
                 <Separator />
                 <div>
-                  <h3 className="text-sm font-medium mb-1">Text Record Preview</h3>
-                  <p className="text-sm line-clamp-4">{record.textRecord}</p>
+                  <h3 className="text-sm font-medium mb-1">Meeting Full Record Preview</h3>
+                  <p className="text-sm line-clamp-4">{record.MeetingFullRecord}</p>
                 </div>
                 {record.remark && (
                   <>

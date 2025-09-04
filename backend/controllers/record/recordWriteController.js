@@ -11,8 +11,8 @@ const createRecord = async (req, res) => {
     const {
       title,
       date,
-      textRecord,
-      outline,
+      textRecord: MeetingFullRecord,
+      outline: MeetingOutline,
       duration,
       participants,
       department,
@@ -51,7 +51,7 @@ const createRecord = async (req, res) => {
 
     const insertQuery = `
       INSERT INTO records (
-        title, date, textRecord, outline, duration, participants,
+        title, date, MeetingFullRecord, MeetingOutline, duration, participants,
         departmentId, financialPeriodId, isPublic, isConfidential, 
         createdBy, videoLink, remark, aiTranslate
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -60,7 +60,7 @@ const createRecord = async (req, res) => {
     const participantsJson = participants ? JSON.stringify(participants) : null;
 
     const [result] = await pool.query(insertQuery, [
-      title, date, textRecord, outline, duration, participantsJson,
+      title, date, MeetingFullRecord, MeetingOutline, duration, participantsJson,
       finalDepartmentId, financialPeriodId, isPublic, isConfidential, 
       userId, videoLink || null, remark || null, aiTranslate || false
     ]);
@@ -105,8 +105,8 @@ const updateRecord = async (req, res) => {
     const {
       title,
       date,
-      textRecord,
-      outline,
+      textRecord: MeetingFullRecord,
+      outline: MeetingOutline,
       duration,
       participants,
       department,
@@ -137,7 +137,7 @@ const updateRecord = async (req, res) => {
 
     const updateQuery = `
       UPDATE records SET
-        title = ?, date = ?, textRecord = ?, outline = ?, duration = ?,
+        title = ?, date = ?, MeetingFullRecord = ?, MeetingOutline = ?, duration = ?,
         participants = ?, departmentId = ?, financialPeriodId = ?,
         isPublic = ?, isConfidential = ?, videoLink = ?, remark = ?,
         aiTranslate = ?, updatedAt = CURRENT_TIMESTAMP
@@ -147,7 +147,7 @@ const updateRecord = async (req, res) => {
     const participantsJson = participants ? JSON.stringify(participants) : null;
 
     await pool.query(updateQuery, [
-      title, date, textRecord, outline, duration, participantsJson,
+      title, date, MeetingFullRecord, MeetingOutline, duration, participantsJson,
       finalDepartmentId, financialPeriodId, isPublic, isConfidential, 
       videoLink || null, remark || null, aiTranslate || false, id
     ]);

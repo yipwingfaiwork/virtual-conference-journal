@@ -22,6 +22,7 @@ interface User {
   address: string;
   departmentId: string;
   departmentName: string;
+  TelegramId?: string;
   isAdmin: boolean;
   isActive: boolean;
   createdAt: string;
@@ -35,6 +36,7 @@ interface UserFormData {
   phone: string;
   address: string;
   departmentId: string;
+  TelegramId?: string;
   isAdmin: boolean;
   isActive: boolean;
 }
@@ -56,6 +58,7 @@ const AdminUsersManagement = () => {
       phone: '',
       address: '',
       departmentId: '',
+      TelegramId: '',
       isAdmin: false,
       isActive: true,
     },
@@ -100,6 +103,7 @@ const AdminUsersManagement = () => {
       phone: user.phone,
       address: user.address,
       departmentId: user.departmentId,
+      TelegramId: user.TelegramId || '',
       isAdmin: user.isAdmin,
       isActive: user.isActive,
     });
@@ -115,6 +119,7 @@ const AdminUsersManagement = () => {
       phone: '',
       address: '',
       departmentId: '',
+      TelegramId: '',
       isAdmin: false,
       isActive: true,
     });
@@ -345,6 +350,20 @@ const AdminUsersManagement = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="TelegramId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telegram ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter Telegram ID" />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

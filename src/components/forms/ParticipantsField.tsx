@@ -1,46 +1,203 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { X, Users } from 'lucide-react';
 import { ConferenceRecord } from '@/lib/types';
+import apiClient from '@/services/api-service';
+import { useToast } from '@/hooks/use-toast';
 
 interface ParticipantsFieldProps {
   record: Partial<ConferenceRecord>;
   setRecord: (record: Partial<ConferenceRecord>) => void;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  departmentName: string;
+}
+
 const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {
-  const [participantsText, setParticipantsText] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [suggestions, setSuggestions] = useState<User[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const participants = Array.isArray(record.participants) ? record.participants : [];
 
   useEffect(() => {
-    if (record.participants && Array.isArray(record.participants)) {
-      const newText = record.participants.join('\n');
-      console.log('ParticipantsField updating text:', newText);
-      setParticipantsText(newText);
+    if (inputValue.trim().length > 1) {
+      searchUsers(inputValue);
     } else {
-      console.log('ParticipantsField: no participants or not array:', record.participants);
-      setParticipantsText('');
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
-  }, [record.participants]);
+  }, [inputValue]);
 
-  const handleParticipantsTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    setParticipantsText(text);
-    const participants = text.split('\n').map(p => p.trim()).filter(p => p !== '');
-    setRecord({ ...record, participants });
+  const searchUsers = async (searchTerm: string) => {
+    try {
+      const response = await apiClient.get('/users');
+      const filteredUsers = response.data.filter((user: User) =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setSuggestions(filteredUsers);
+      setShowSuggestions(filteredUsers.length > 0);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to search users",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addParticipant = (name: string) => {
+    const trimmedName = name.trim();
+    if (trimmedName && !participants.includes(trimmedName)) {
+      const newParticipants = [...participants, trimmedName];
+      setRecord({ ...record, participants: newParticipants });
+    }
+    setInputValue('');
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  };
+
+  const removeParticipant = (index: number) => {
+    const newParticipants = participants.filter((_, i) => i !== index);
+    setRecord({ ...record, participants: newParticipants });
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === ',' || e.key === 'Enter') {
+      e.preventDefault();
+      if (inputValue.trim()) {
+        addParticipant(inputValue);
+      }
+    }
+  };
+
+  const startEditing = (index: number) => {
+    setEditingIndex(index);
+    setEditingValue(participants[index]);
+  };
+
+  const saveEdit = () => {
+    if (editingIndex !== null && editingValue.trim()) {
+      const newParticipants = [...participants];
+      newParticipants[editingIndex] = editingValue.trim();
+      setRecord({ ...record, participants: newParticipants });
+    }
+    setEditingIndex(null);
+    setEditingValue('');
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+    setEditingValue('');
   };
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="record-participants">Participants (one per line)</Label>
-      <Textarea
-        id="record-participants"
-        name="participants"
-        value={participantsText}
-        onChange={handleParticipantsTextChange}
-        placeholder="Enter participant names, one per line"
-        className="min-h-[80px]"
-      />
+      <div className="flex items-center">
+        <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+        <Label htmlFor="record-participants">Participants</Label>
+      </div>
+      
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          id="record-participants"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+          placeholder="Type participant name and press comma or enter..."
+          className="pr-4"
+        />
+        
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+            {suggestions.map((user) => (
+              <div
+                key={user.id}
+                className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                onClick={() => addParticipant(user.name)}
+              >
+                <div className="font-medium">{user.name}</div>
+                <div className="text-xs text-muted-foreground">{user.departmentName}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {participants.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-3">
+          {participants.map((participant, index) => (
+            <div key={index} className="relative">
+              {editingIndex === index ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        saveEdit();
+                      } else if (e.key === 'Escape') {
+                        cancelEdit();
+                      }
+                    }}
+                    className="h-8 text-sm w-32"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={saveEdit}
+                    className="h-6 w-6 p-0"
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={cancelEdit}
+                    className="h-6 w-6 p-0"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 pl-3 pr-1 text-sm group"
+                  onDoubleClick={() => startEditing(index)}
+                  title="Double-click to edit"
+                >
+                  <span className="mr-2">{participant}</span>
+                  <X
+                    className="h-3 w-3 hover:text-destructive cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeParticipant(index);
+                    }}
+                  />
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <p className="text-xs text-muted-foreground">
+        Type names and press comma/enter to add. Double-click names to edit.
+      </p>
     </div>
   );
 };

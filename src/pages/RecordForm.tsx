@@ -54,13 +54,13 @@ const RecordForm = () => {
           
           <div className="space-y-6">
             <OutlineForm 
-              outline={record.outline || ''} 
-              handleChange={(e) => setRecord({ ...record, outline: e.target.value })} 
+              outline={record.MeetingOutline || ''} 
+              handleChange={(e) => setRecord({ ...record, MeetingOutline: e.target.value })} 
             />
             
             <TextRecordForm 
-              textRecord={record.textRecord || ''} 
-              handleChange={(e) => setRecord({ ...record, textRecord: e.target.value })} 
+              textRecord={record.MeetingFullRecord || ''} 
+              handleChange={(e) => setRecord({ ...record, MeetingFullRecord: e.target.value })} 
             />
           </div>
         </div>
