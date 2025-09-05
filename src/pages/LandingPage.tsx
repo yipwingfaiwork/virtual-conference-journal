@@ -25,7 +25,7 @@ const LandingPage = () => {
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
               <h1 className="text-4xl md:text-5xl font-bold text-terracotta mb-4 animate-fadeIn">
-                Virtual Conference Records Management
+                Relax Hotel Group Meeting Record Management System
               </h1>
               <p className="text-lg text-gray mb-8 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
                 Simplify how you store, access, and manage your virtual conference records with our intuitive platform.
@@ -44,8 +44,8 @@ const LandingPage = () => {
             </div>
             <div className="md:w-1/2 flex justify-center animate-fadeIn" style={{ animationDelay: '0.6s' }}>
               <img 
-                src="https://images.unsplash.com/photo-1531297484001-80022131f5a1" 
-                alt="Virtual Conference Management" 
+                src="https://i.imgur.com/JuCBjod.jpeg" 
+                alt="Relax Hotel Group Meeting Management" 
                 className="rounded-lg shadow-xl max-w-full h-auto" 
                 style={{ maxHeight: '400px' }}
               />

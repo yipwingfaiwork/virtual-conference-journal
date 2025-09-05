@@ -8,22 +8,22 @@ const ActivityLogService = require('../../services/activityLogService');
 const createRecord = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const {
-      title,
-      date,
-      textRecord: MeetingFullRecord,
-      outline: MeetingOutline,
-      duration,
-      participants,
-      department,
-      departmentId,
-      financialPeriodId,
-      tags,
-      accessLevel,
-      videoLink,
-      remark,
-      aiTranslate
-    } = req.body;
+      const {
+        title,
+        date,
+        MeetingFullRecord,
+        MeetingOutline,
+        duration,
+        participants,
+        department,
+        departmentId,
+        financialPeriodId,
+        tags,
+        accessLevel,
+        videoLink,
+        remark,
+        aiTranslate
+      } = req.body;
 
     console.log('Create record request body:', req.body);
 
@@ -102,22 +102,22 @@ const updateRecord = async (req, res) => {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
-    const {
-      title,
-      date,
-      textRecord: MeetingFullRecord,
-      outline: MeetingOutline,
-      duration,
-      participants,
-      department,
-      departmentId,
-      financialPeriodId,
-      tags,
-      accessLevel,
-      videoLink,
-      remark,
-      aiTranslate
-    } = req.body;
+      const {
+        title,
+        date,
+        MeetingFullRecord,
+        MeetingOutline,
+        duration,
+        participants,
+        department,
+        departmentId,
+        financialPeriodId,
+        tags,
+        accessLevel,
+        videoLink,
+        remark,
+        aiTranslate
+      } = req.body;
 
     // Handle department mapping
     let finalDepartmentId = departmentId;

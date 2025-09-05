@@ -59,6 +59,16 @@
   }
 }
 
+/* Whitespace handling for text areas and pre-formatted text */
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+}
+
+/* Ensure dropdowns have proper background and z-index */
+[data-radix-popper-content-wrapper] {
+  z-index: 50;
+}
+
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.6s ease-out forwards;
 }

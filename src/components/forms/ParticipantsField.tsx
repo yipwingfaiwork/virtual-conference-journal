@@ -156,17 +156,27 @@ const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {
                     autoFocus
                   />
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
-                    onClick={saveEdit}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      saveEdit();
+                    }}
                     className="h-6 w-6 p-0"
                   >
                     ✓
                   </Button>
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
-                    onClick={cancelEdit}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      cancelEdit();
+                    }}
                     className="h-6 w-6 p-0"
                   >
                     ✕
@@ -174,10 +184,15 @@ const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {
                 </div>
               ) : (
                 <Button
+                  type="button"
                   variant="secondary"
                   size="sm"
                   className="h-8 pl-3 pr-1 text-sm group"
-                  onDoubleClick={() => startEditing(index)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    startEditing(index);
+                  }}
                   title="Double-click to edit"
                 >
                   <span className="mr-2">{participant}</span>
@@ -185,6 +200,7 @@ const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {
                     className="h-3 w-3 hover:text-destructive cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.preventDefault();
                       removeParticipant(index);
                     }}
                   />

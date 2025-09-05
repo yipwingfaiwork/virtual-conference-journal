@@ -2,7 +2,7 @@
 import { AlignLeft } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import RichTextEditor from "@/components/ui/rich-text-editor";
+import { Textarea } from "@/components/ui/textarea";
 
 interface OutlineFormProps {
   outline: string;
@@ -10,17 +10,6 @@ interface OutlineFormProps {
 }
 
 const OutlineForm = ({ outline, handleChange }: OutlineFormProps) => {
-  const handleRichTextChange = (value: string) => {
-    // Create a synthetic event to match the expected interface
-        const syntheticEvent = {
-        target: {
-          name: 'MeetingOutline',
-          value: value
-        }
-      } as React.ChangeEvent<HTMLTextAreaElement>;
-    
-    handleChange(syntheticEvent);
-  };
 
   return (
     <Card>
@@ -33,11 +22,12 @@ const OutlineForm = ({ outline, handleChange }: OutlineFormProps) => {
             <AlignLeft className="h-4 w-4 mr-2 text-muted-foreground" />
             <Label htmlFor="outline">Meeting Outline</Label>
           </div>
-          <RichTextEditor
+          <Textarea
+            name="MeetingOutline"
             value={outline}
-            onChange={handleRichTextChange}
-            placeholder="Enter meeting outline with formatting..."
-            className="min-h-[200px]"
+            onChange={handleChange}
+            placeholder="Enter meeting outline..."
+            className="min-h-[200px] resize-y"
           />
         </div>
       </CardContent>
