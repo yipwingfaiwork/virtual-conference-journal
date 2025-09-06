@@ -34,6 +34,14 @@ export const useRecordForm = () => {
     tags: []
   });
 
+  console.log('=== USE RECORD FORM HOOK DEBUG ===');
+  console.log('ID from params:', id);
+  console.log('Mode:', mode);
+  console.log('ExistingRecord from useRecord:', existingRecord);
+  console.log('RecordLoading:', recordLoading);
+  console.log('Current record state:', record);
+  console.log('=== END USE RECORD FORM HOOK DEBUG ===');
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -61,9 +69,15 @@ export const useRecordForm = () => {
 
   useEffect(() => {
     if (mode === 'edit' && existingRecord && !recordLoading && user) {
-      console.log('Loading existing record data:', existingRecord);
+      console.log('=== EDIT RECORD DEBUG ===');
+      console.log('Mode:', mode);
+      console.log('ExistingRecord:', existingRecord);
+      console.log('RecordLoading:', recordLoading);
+      console.log('User:', user);
+      console.log('Record ID from params:', id);
       
       if (!canUserModifyRecord(user, existingRecord.createdBy)) {
+        console.log('Permission check failed');
         toast({
           title: "Permission denied",
           description: "You don't have permission to edit this record.",
@@ -72,6 +86,8 @@ export const useRecordForm = () => {
         navigate('/records');
         return;
       }
+      
+      console.log('Permission check passed');
       
       // Ensure departmentId is a string for Select component
       const departmentIdStr = existingRecord.departmentId ? String(existingRecord.departmentId) : String(user.departmentId);
@@ -95,11 +111,19 @@ export const useRecordForm = () => {
         updatedAt: existingRecord.updatedAt
       };
       
-      console.log('Setting formatted record:', formattedRecord);
+      console.log('=== FORMATTED RECORD FOR EDIT ===');
+      console.log('Formatted record:', JSON.stringify(formattedRecord, null, 2));
       console.log('Department ID (original vs formatted):', existingRecord.departmentId, '->', departmentIdStr);
+      console.log('MeetingFullRecord:', formattedRecord.MeetingFullRecord);
+      console.log('MeetingOutline:', formattedRecord.MeetingOutline);
+      console.log('Title:', formattedRecord.title);
+      console.log('Date:', formattedRecord.date);
+      console.log('Participants:', formattedRecord.participants);
+      console.log('=== END DEBUG ===');
+      
       setRecord(formattedRecord);
     }
-  }, [existingRecord, mode, navigate, recordLoading, toast, user]);
+  }, [existingRecord, mode, navigate, recordLoading, toast, user, id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

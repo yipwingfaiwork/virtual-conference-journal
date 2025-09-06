@@ -12,12 +12,16 @@ interface BasicFieldsProps {
 }
 
 const BasicFields = ({ record, setRecord, departments }: BasicFieldsProps) => {
+  console.log('=== BASIC FIELDS DEBUG ===');
+  console.log('Record in BasicFields:', record);
+  console.log('Departments:', departments);
+  console.log('Department ID:', record.departmentId);
+  console.log('=== END BASIC FIELDS DEBUG ===');
   const formatDateForInput = (dateString: string | undefined) => {
     if (!dateString) return '';
     try {
       const date = new Date(dateString);
       const formatted = date.toISOString().slice(0, 16);
-      console.log('BasicFields formatting date:', dateString, '->', formatted);
       return formatted;
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -75,15 +79,18 @@ const BasicFields = ({ record, setRecord, departments }: BasicFieldsProps) => {
       <div className="space-y-2">
         <Label htmlFor="record-department">Department</Label>
         <Select 
-          value={record.departmentId || ''} 
-          onValueChange={(value) => setRecord({ ...record, departmentId: value })}
+          value={record.departmentId ? String(record.departmentId) : ''} 
+          onValueChange={(value) => {
+            console.log('Department selected:', value);
+            setRecord({ ...record, departmentId: value });
+          }}
         >
           <SelectTrigger id="record-department">
             <SelectValue placeholder="Select department" />
           </SelectTrigger>
           <SelectContent>
             {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
+              <SelectItem key={dept.id} value={String(dept.id)}>
                 {dept.name}
               </SelectItem>
             ))}

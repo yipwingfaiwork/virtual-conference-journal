@@ -10,6 +10,9 @@ interface OutlineFormProps {
 }
 
 const OutlineForm = ({ outline, handleChange }: OutlineFormProps) => {
+  console.log('=== OUTLINE FORM DEBUG ===');
+  console.log('Outline value:', outline);
+  console.log('=== END OUTLINE FORM DEBUG ===');
 
   return (
     <Card>

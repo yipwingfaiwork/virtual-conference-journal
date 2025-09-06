@@ -10,6 +10,9 @@ interface TextRecordFormProps {
 }
 
 const TextRecordForm = ({ textRecord, handleChange }: TextRecordFormProps) => {
+  console.log('=== TEXT RECORD FORM DEBUG ===');
+  console.log('Text record value:', textRecord);
+  console.log('=== END TEXT RECORD FORM DEBUG ===');
 
   return (
     <Card>
