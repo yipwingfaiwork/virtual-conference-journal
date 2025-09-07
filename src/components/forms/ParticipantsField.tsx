@@ -17,6 +17,7 @@ interface User {
   name: string;
   email: string;
   departmentName: string;
+  isManager?: boolean;
 }
 
 const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {

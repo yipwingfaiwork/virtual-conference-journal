@@ -19,7 +19,7 @@ exports.login = async (req, res) => {
     const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
-        u.password, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        u.password, u.isAdmin, u.isManager, u.isActive, u.createdAt, u.updatedAt,
         d.name as departmentName
       FROM users u
       LEFT JOIN departments d ON u.departmentId = d.id
@@ -50,6 +50,7 @@ exports.login = async (req, res) => {
         userId: user.id, 
         email: user.email, 
         isAdmin: user.isAdmin,
+        isManager: user.isManager,
         departmentId: user.departmentId 
       },
       process.env.JWT_SECRET || 'relaxhotelkey',
@@ -93,7 +94,7 @@ exports.getCurrentUser = async (req, res) => {
     const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId,
-        u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        u.isAdmin, u.isManager, u.isActive, u.createdAt, u.updatedAt,
         d.name as departmentName
       FROM users u
       LEFT JOIN departments d ON u.departmentId = d.id

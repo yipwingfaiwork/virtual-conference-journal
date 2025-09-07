@@ -8,7 +8,7 @@ exports.getAllUsers = async (req, res) => {
     const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
-        u.TelegramId, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        u.TelegramId, u.isAdmin, u.isManager, u.isActive, u.createdAt, u.updatedAt,
         d.name as departmentName
       FROM users u
       LEFT JOIN departments d ON u.departmentId = d.id
@@ -30,7 +30,7 @@ exports.getUserById = async (req, res) => {
     const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
-        u.TelegramId, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        u.TelegramId, u.isAdmin, u.isManager, u.isActive, u.createdAt, u.updatedAt,
         d.name as departmentName
       FROM users u
       LEFT JOIN departments d ON u.departmentId = d.id
@@ -51,7 +51,7 @@ exports.getUserById = async (req, res) => {
 // Create new user
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password, phone, address, departmentId, TelegramId, isAdmin, isActive } = req.body;
+    const { name, email, password, phone, address, departmentId, TelegramId, isAdmin, isManager, isActive } = req.body;
     
     console.log('Create user request body:', req.body);
     
@@ -80,16 +80,16 @@ exports.createUser = async (req, res) => {
     
     // Create user
     const [result] = await pool.query(
-      `INSERT INTO users (name, email, password, phone, address, departmentId, TelegramId, isAdmin, isActive) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, phone || null, address || null, departmentId || null, TelegramId || null, isAdmin || false, isActive !== false]
+      `INSERT INTO users (name, email, password, phone, address, departmentId, TelegramId, isAdmin, isManager, isActive) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, email, hashedPassword, phone || null, address || null, departmentId || null, TelegramId || null, isAdmin || false, isManager || false, isActive !== false]
     );
     
     // Get created user
     const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
-        u.TelegramId, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        u.TelegramId, u.isAdmin, u.isManager, u.isActive, u.createdAt, u.updatedAt,
         d.name as departmentName
       FROM users u
       LEFT JOIN departments d ON u.departmentId = d.id
@@ -108,7 +108,7 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, address, departmentId, TelegramId, isAdmin, isActive, password } = req.body;
+    const { name, email, phone, address, departmentId, TelegramId, isAdmin, isManager, isActive, password } = req.body;
     
     // Check if user exists
     const [existingUsers] = await pool.query('SELECT id FROM users WHERE id = ?', [id]);
@@ -119,9 +119,9 @@ exports.updateUser = async (req, res) => {
     let updateQuery = `
       UPDATE users SET 
         name = ?, email = ?, phone = ?, address = ?, 
-        departmentId = ?, TelegramId = ?, isAdmin = ?, isActive = ?, updatedAt = CURRENT_TIMESTAMP
+        departmentId = ?, TelegramId = ?, isAdmin = ?, isManager = ?, isActive = ?, updatedAt = CURRENT_TIMESTAMP
     `;
-    let params = [name, email, phone, address, departmentId, TelegramId, isAdmin, isActive];
+    let params = [name, email, phone, address, departmentId, TelegramId, isAdmin, isManager, isActive];
     
     // Update password if provided
     if (password) {
@@ -139,7 +139,7 @@ exports.updateUser = async (req, res) => {
     const [users] = await pool.query(`
       SELECT 
         u.id, u.name, u.email, u.phone, u.address, u.departmentId, 
-        u.TelegramId, u.isAdmin, u.isActive, u.createdAt, u.updatedAt,
+        u.TelegramId, u.isAdmin, u.isManager, u.isActive, u.createdAt, u.updatedAt,
         d.name as departmentName
       FROM users u
       LEFT JOIN departments d ON u.departmentId = d.id

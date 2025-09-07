@@ -20,6 +20,7 @@ interface User {
   id: string;
   name: string;
   departmentName: string;
+  isManager?: boolean;
 }
 
 interface RecordsSubMenuProps {

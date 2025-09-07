@@ -32,6 +32,11 @@ class RecordService {
       return { conditions: [], params: [] };
     }
     
+    if (userInfo.isManager) {
+      // Managers can view all records (PUBLIC, DEPARTMENT, CONFIDENTIAL)
+      return { conditions: [], params: [] };
+    }
+    
     const conditions = [`(
       r.isPublic = true OR 
       (r.isPublic = false AND r.isConfidential = false AND r.departmentId = ?) OR

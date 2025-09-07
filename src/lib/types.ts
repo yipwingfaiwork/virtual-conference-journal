@@ -9,6 +9,7 @@ export interface User {
   departmentName: string;
   TelegramId?: string;
   isAdmin: boolean;
+  isManager: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

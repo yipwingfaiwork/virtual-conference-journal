@@ -6,34 +6,49 @@ export class PermissionService {
     // Admin can view all records
     if (user.isAdmin) return true;
     
+    // Manager can view PUBLIC, DEPARTMENT, and CONFIDENTIAL records
+    if (user.isManager) return true;
+    
     // Public records can be viewed by anyone
     if (record.isPublic) return true;
     
-    // Confidential records can only be viewed by creator or admin
-    if (record.isConfidential) {
-      return record.createdBy === user.id || user.isAdmin;
+    // Department records can be viewed by same department users
+    if (!record.isConfidential && user.departmentId === record.departmentId) {
+      return true;
     }
     
-    // Department records can be viewed by same department or creator
-    return user.departmentId === record.departmentId || record.createdBy === user.id;
+    // Confidential records can only be viewed by creator
+    if (record.isConfidential && record.createdBy === user.id) {
+      return true;
+    }
+    
+    return false;
   }
   
   static canUserEditRecord(user: User, record: ConferenceRecord): boolean {
     // Admin can edit all records
     if (user.isAdmin) return true;
     
-    // Must be able to view first
-    if (!this.canUserViewRecord(user, record)) return false;
-    
-    // Creator can edit their own records
-    if (record.createdBy === user.id) return true;
-    
-    // For non-confidential department records, same department users can edit
-    if (!record.isConfidential && user.departmentId === record.departmentId) {
-      return true;
+    // Manager permissions
+    if (user.isManager) {
+      // Can edit PUBLIC records
+      if (record.isPublic) return true;
+      
+      // Can edit same department DEPARTMENT records
+      if (!record.isConfidential && user.departmentId === record.departmentId) {
+        return true;
+      }
+      
+      // Can edit own CONFIDENTIAL records
+      if (record.isConfidential && record.createdBy === user.id) {
+        return true;
+      }
+      
+      return false;
     }
     
-    return false;
+    // Regular user permissions - can only edit their own records
+    return record.createdBy === user.id;
   }
   
   static canUserDeleteRecord(user: User, record: ConferenceRecord): boolean {
@@ -52,5 +67,11 @@ export class PermissionService {
     }
     
     return [user.departmentId]; // Only own department
+  }
+  
+  static getUserRole(user: User): 'Administrator' | 'Manager' | 'User' {
+    if (user.isAdmin) return 'Administrator';
+    if (user.isManager) return 'Manager';
+    return 'User';
   }
 }

@@ -20,6 +20,7 @@ interface User {
   departmentId: string;
   departmentName: string;
   isAdmin: boolean;
+  isManager: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

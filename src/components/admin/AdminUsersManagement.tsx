@@ -24,6 +24,7 @@ interface User {
   departmentName: string;
   TelegramId?: string;
   isAdmin: boolean;
+  isManager: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +39,7 @@ interface UserFormData {
   departmentId: string;
   TelegramId?: string;
   isAdmin: boolean;
+  isManager: boolean;
   isActive: boolean;
 }
 
@@ -60,6 +62,7 @@ const AdminUsersManagement = () => {
       departmentId: '',
       TelegramId: '',
       isAdmin: false,
+      isManager: false,
       isActive: true,
     },
   });
@@ -105,6 +108,7 @@ const AdminUsersManagement = () => {
       departmentId: user.departmentId,
       TelegramId: user.TelegramId || '',
       isAdmin: user.isAdmin,
+      isManager: user.isManager,
       isActive: user.isActive,
     });
     setIsDialogOpen(true);
@@ -121,6 +125,7 @@ const AdminUsersManagement = () => {
       departmentId: '',
       TelegramId: '',
       isAdmin: false,
+      isManager: false,
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -389,6 +394,24 @@ const AdminUsersManagement = () => {
                   
                   <FormField
                     control={form.control}
+                    name="isManager"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={field.onChange} 
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Manager</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
                     name="isActive"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -466,10 +489,12 @@ const AdminUsersManagement = () => {
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     user.isAdmin 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-purple-100 text-purple-800' 
+                      : user.isManager
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {user.isAdmin ? 'Admin' : 'User'}
+                    {user.isAdmin ? 'Administrator' : user.isManager ? 'Manager' : 'User'}
                   </span>
                 </TableCell>
                 <TableCell>
