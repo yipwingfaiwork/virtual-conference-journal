@@ -23,9 +23,10 @@ const OutlineForm = ({ outline, handleChange }: OutlineFormProps) => {
         <div className="space-y-2">
           <div className="flex items-center">
             <AlignLeft className="h-4 w-4 mr-2 text-muted-foreground" />
-            <Label htmlFor="outline">Meeting Outline</Label>
+            <Label htmlFor="MeetingOutline">Meeting Outline</Label>
           </div>
           <Textarea
+            id="MeetingOutline"
             name="MeetingOutline"
             value={outline}
             onChange={handleChange}

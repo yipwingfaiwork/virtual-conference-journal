@@ -68,7 +68,7 @@ export const useRecordForm = () => {
   }, [navigate, mode]);
 
   useEffect(() => {
-    if (mode === 'edit' && existingRecord && !recordLoading && user) {
+    if (mode === 'edit' && existingRecord && !recordLoading && user && !record.id) {
       console.log('=== EDIT RECORD DEBUG ===');
       console.log('Mode:', mode);
       console.log('ExistingRecord:', existingRecord);
@@ -123,7 +123,7 @@ export const useRecordForm = () => {
       
       setRecord(formattedRecord);
     }
-  }, [existingRecord, mode, navigate, recordLoading, toast, user, id]);
+  }, [existingRecord, mode, navigate, recordLoading, toast, user, id, record.id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

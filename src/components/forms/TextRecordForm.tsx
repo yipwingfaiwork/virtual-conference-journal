@@ -23,9 +23,10 @@ const TextRecordForm = ({ textRecord, handleChange }: TextRecordFormProps) => {
         <div className="space-y-2">
           <div className="flex items-center">
             <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-            <Label htmlFor="textRecord">Meeting Full Record</Label>
+            <Label htmlFor="MeetingFullRecord">Meeting Full Record</Label>
           </div>
           <Textarea
+            id="MeetingFullRecord"
             name="MeetingFullRecord"
             value={textRecord}
             onChange={handleChange}
