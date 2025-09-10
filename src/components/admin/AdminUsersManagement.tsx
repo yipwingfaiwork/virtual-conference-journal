@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Department } from '@/lib/types';
 import apiClient from '@/services/api-service';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrentUser } from '@/lib/auth';
 
 interface User {
   id: string;
@@ -50,6 +51,7 @@ const AdminUsersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   const form = useForm<UserFormData>({
@@ -70,7 +72,17 @@ const AdminUsersManagement = () => {
   useEffect(() => {
     loadUsers();
     loadDepartments();
+    loadCurrentUser();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error loading current user:', error);
+    }
+  };
 
   const loadUsers = async () => {
     try {
@@ -517,7 +529,7 @@ const AdminUsersManagement = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleDelete(user.id)}
-                      disabled={user.isAdmin}
+                      disabled={currentUser?.id === user.id}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

@@ -59,8 +59,8 @@ const AdminLoginPage = () => {
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again later.",
+        title: "Login Failed",
+        description: "Please enter correct Email and password, or contact Administrator admin@example.com",
         variant: "destructive",
       });
       console.error('Admin login error:', error);

@@ -80,6 +80,10 @@ const ParticipantsField = ({ record, setRecord }: ParticipantsFieldProps) => {
       if (inputValue.trim()) {
         addParticipant(inputValue);
       }
+    } else if (e.key === 'Backspace' && inputValue === '' && participants.length > 0) {
+      // Remove last participant when backspace is pressed and input is empty
+      e.preventDefault();
+      removeParticipant(participants.length - 1);
     }
   };
 

@@ -43,9 +43,9 @@ const Navbar = () => {
     setUser(null);
     toast({
       title: "Logged out successfully",
-      description: "You have been logged out of your account",
+      description: "You have already Logout, redirect to frontpage",
     });
-    navigate('/login');
+    navigate('/');
   };
 
   const getInitials = (name: string) => {
