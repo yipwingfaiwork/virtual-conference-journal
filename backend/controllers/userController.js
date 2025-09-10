@@ -157,18 +157,40 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    const requestingUserId = req.user.id; // From auth middleware
+    const requestingUserIsAdmin = req.user.isAdmin; // From auth middleware
     
-    // Check if user exists
-    const [existingUsers] = await pool.query('SELECT id FROM users WHERE id = ?', [id]);
+    // Check if requesting user is admin
+    if (!requestingUserIsAdmin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+    
+    // Prevent admin from deleting themselves
+    if (requestingUserId === parseInt(id)) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    
+    // Check if target user exists
+    const [existingUsers] = await pool.query('SELECT id, name, email FROM users WHERE id = ?', [id]);
     if (existingUsers.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
+    // Delete the user (foreign keys will be set to NULL automatically)
     await pool.query('DELETE FROM users WHERE id = ?', [id]);
     
+    console.log(`Admin ${requestingUserId} deleted user ${existingUsers[0].email} (ID: ${id})`);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
+    
+    // Check for specific constraint errors
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(400).json({ 
+        error: 'Cannot delete user due to existing references. Please run the database migration first.' 
+      });
+    }
+    
     res.status(500).json({ error: 'Failed to delete user' });
   }
 };
