@@ -147,15 +147,63 @@ class RecordService {
     });
   }
 
-  // Check if user has permission to modify a record
-  static async checkModifyPermission(recordId, userId, isAdmin) {
-    const checkQuery = `
-      SELECT * FROM records 
-      WHERE id = ? AND (createdBy = ? OR ? = true)
+  // Check if user has permission to modify a record (delete/update)
+  static async checkModifyPermission(recordId, userInfo) {
+    console.log('Checking modify permission for record:', recordId, 'user:', userInfo);
+    
+    // Get record details
+    const getRecordQuery = `
+      SELECT id, createdBy, isPublic, isConfidential, departmentId
+      FROM records 
+      WHERE id = ?
     `;
     
-    const [rows] = await pool.query(checkQuery, [recordId, userId, isAdmin]);
-    return rows.length > 0;
+    const [rows] = await pool.query(getRecordQuery, [recordId]);
+    if (rows.length === 0) {
+      console.log('Record not found:', recordId);
+      return false;
+    }
+    
+    const record = rows[0];
+    const userId = userInfo.userId;
+    
+    console.log('Record details:', record);
+    console.log('User info:', { userId, isAdmin: userInfo.isAdmin, isManager: userInfo.isManager, departmentId: userInfo.departmentId });
+    
+    // Admin can modify all records
+    if (userInfo.isAdmin) {
+      console.log('Admin permission granted');
+      return true;
+    }
+    
+    // Manager permissions
+    if (userInfo.isManager) {
+      // Can modify PUBLIC records
+      if (record.isPublic) {
+        console.log('Manager permission granted for PUBLIC record');
+        return true;
+      }
+      
+      // Can modify same department DEPARTMENT records
+      if (!record.isConfidential && userInfo.departmentId === record.departmentId) {
+        console.log('Manager permission granted for same department DEPARTMENT record');
+        return true;
+      }
+      
+      // Can modify own CONFIDENTIAL records
+      if (record.isConfidential && record.createdBy === userId) {
+        console.log('Manager permission granted for own CONFIDENTIAL record');
+        return true;
+      }
+      
+      console.log('Manager permission denied');
+      return false;
+    }
+    
+    // Regular user permissions - can only modify their own records
+    const canModify = record.createdBy === userId;
+    console.log('Regular user permission:', canModify ? 'granted' : 'denied');
+    return canModify;
   }
 
   // Map frontend accessLevel to database fields

@@ -117,7 +117,7 @@ const AdminUsersManagement = () => {
       email: user.email,
       phone: user.phone,
       address: user.address,
-      departmentId: user.departmentId,
+      departmentId: user.departmentId?.toString() || '',
       TelegramId: user.TelegramId || '',
       isAdmin: user.isAdmin,
       isManager: user.isManager,
@@ -350,10 +350,14 @@ const AdminUsersManagement = () => {
                   <FormField
                     control={form.control}
                     name="departmentId"
+                    rules={{ required: 'Department is required' }}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Department</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value?.toString() || ""}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select department" />
@@ -361,7 +365,7 @@ const AdminUsersManagement = () => {
                           </FormControl>
                           <SelectContent>
                             {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.id}>
+                              <SelectItem key={dept.id} value={dept.id.toString()}>
                                 {dept.name}
                               </SelectItem>
                             ))}

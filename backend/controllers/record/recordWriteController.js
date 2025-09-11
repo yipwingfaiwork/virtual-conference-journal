@@ -93,13 +93,18 @@ const createRecord = async (req, res) => {
 const updateRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
-    const isAdmin = req.user.isAdmin;
+    const userInfo = {
+      userId: req.user.userId,
+      isAdmin: req.user.isAdmin,
+      isManager: req.user.isManager,
+      departmentId: req.user.departmentId
+    };
 
     // Check permission
-    const hasPermission = await RecordService.checkModifyPermission(id, userId, isAdmin);
+    const hasPermission = await RecordService.checkModifyPermission(id, userInfo);
     if (!hasPermission) {
-      return res.status(403).json({ error: 'Permission denied' });
+      console.log('Update permission denied for user:', userInfo.userId, 'record:', id);
+      return res.status(403).json({ error: 'Permission denied. You do not have sufficient privileges to modify this record.' });
     }
 
       const {
@@ -158,7 +163,7 @@ const updateRecord = async (req, res) => {
 
     // Log activity
     await ActivityLogService.logActivity(
-      userId,
+      userInfo.userId,
       'RECORD_UPDATE',
       `Updated record: ${title}`,
       id
@@ -176,13 +181,18 @@ const updateRecord = async (req, res) => {
 const deleteRecord = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
-    const isAdmin = req.user.isAdmin;
+    const userInfo = {
+      userId: req.user.userId,
+      isAdmin: req.user.isAdmin,
+      isManager: req.user.isManager,
+      departmentId: req.user.departmentId
+    };
 
     // Check permission
-    const hasPermission = await RecordService.checkModifyPermission(id, userId, isAdmin);
+    const hasPermission = await RecordService.checkModifyPermission(id, userInfo);
     if (!hasPermission) {
-      return res.status(403).json({ error: 'Permission denied' });
+      console.log('Delete permission denied for user:', userInfo.userId, 'record:', id);
+      return res.status(403).json({ error: 'Permission denied. You do not have sufficient privileges to delete this record.' });
     }
 
     // Get record title for logging
@@ -197,7 +207,7 @@ const deleteRecord = async (req, res) => {
 
     // Log activity
     await ActivityLogService.logActivity(
-      userId,
+      userInfo.userId,
       'RECORD_DELETE',
       `Deleted record: ${recordTitle}`,
       id
