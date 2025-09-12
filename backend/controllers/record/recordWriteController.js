@@ -100,12 +100,21 @@ const updateRecord = async (req, res) => {
       departmentId: req.user.departmentId
     };
 
+    console.log('=== UPDATE RECORD PERMISSION CHECK ===');
+    console.log('User from req.user:', JSON.stringify(req.user, null, 2));
+    console.log('UserInfo object:', JSON.stringify(userInfo, null, 2));
+    
     // Check permission
     const hasPermission = await RecordService.checkModifyPermission(id, userInfo);
     if (!hasPermission) {
-      console.log('Update permission denied for user:', userInfo.userId, 'record:', id);
-      return res.status(403).json({ error: 'Permission denied. You do not have sufficient privileges to modify this record.' });
+      console.log('❌ UPDATE permission denied for user:', userInfo.userId, 'record:', id);
+      return res.status(403).json({ 
+        error: 'Permission denied. You do not have sufficient privileges to modify this record.',
+        debug: { userInfo, recordId: id }
+      });
     }
+    
+    console.log('✅ UPDATE permission granted for user:', userInfo.userId, 'record:', id);
 
       const {
         title,
@@ -188,12 +197,21 @@ const deleteRecord = async (req, res) => {
       departmentId: req.user.departmentId
     };
 
+    console.log('=== DELETE RECORD PERMISSION CHECK ===');
+    console.log('User from req.user:', JSON.stringify(req.user, null, 2));
+    console.log('UserInfo object:', JSON.stringify(userInfo, null, 2));
+    
     // Check permission
     const hasPermission = await RecordService.checkModifyPermission(id, userInfo);
     if (!hasPermission) {
-      console.log('Delete permission denied for user:', userInfo.userId, 'record:', id);
-      return res.status(403).json({ error: 'Permission denied. You do not have sufficient privileges to delete this record.' });
+      console.log('❌ DELETE permission denied for user:', userInfo.userId, 'record:', id);
+      return res.status(403).json({ 
+        error: 'Permission denied. You do not have sufficient privileges to delete this record.',
+        debug: { userInfo, recordId: id }
+      });
     }
+    
+    console.log('✅ DELETE permission granted for user:', userInfo.userId, 'record:', id);
 
     // Get record title for logging
     const [recordRows] = await pool.query('SELECT title FROM records WHERE id = ?', [id]);
